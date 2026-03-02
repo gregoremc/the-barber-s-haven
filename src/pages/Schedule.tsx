@@ -5,6 +5,10 @@ import MotionContainer from "@/components/MotionContainer";
 import { mockAppointments, mockBarbers, mockServices } from "@/data/mockData";
 import { Appointment } from "@/types/barbershop";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+
 
 const statusConfig = {
   scheduled: { label: "Agendado", className: "bg-accent/10 text-accent" },
@@ -135,17 +139,30 @@ const Schedule = () => {
         >
           <ChevronLeft size={20} className="text-muted-foreground" />
         </motion.button>
-        <div className="text-center">
-          <p className="text-sm font-medium capitalize">{formatDateBR(selectedDate)}</p>
-          {!isToday && (
-            <button onClick={goToToday} className="text-xs text-primary hover:underline mt-0.5">
-              Voltar para hoje
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="text-center cursor-pointer hover:opacity-80 transition-opacity">
+              <p className="text-sm font-medium capitalize">{formatDateBR(selectedDate)}</p>
+              {!isToday && (
+                <button onClick={(e) => { e.stopPropagation(); goToToday(); }} className="text-xs text-primary hover:underline mt-0.5">
+                  Voltar para hoje
+                </button>
+              )}
+              {isToday && (
+                <p className="text-xs text-muted-foreground mt-0.5">Hoje</p>
+              )}
             </button>
-          )}
-          {isToday && (
-            <p className="text-xs text-muted-foreground mt-0.5">Hoje</p>
-          )}
-        </div>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
