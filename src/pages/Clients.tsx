@@ -2,6 +2,7 @@ import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
+import ConfirmDelete from "@/components/ConfirmDelete";
 import { clientsStore, Client } from "@/data/clientsStore";
 
 const Clients = () => {
@@ -10,6 +11,7 @@ const Clients = () => {
   const [showForm, setShowForm] = useState(false);
   const [editClient, setEditClient] = useState<Client | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
+  const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
 
   const filtered = clients.filter(
     (c) =>
@@ -40,12 +42,22 @@ const Clients = () => {
     setShowForm(false);
   };
 
-  const handleDelete = (id: string) => {
-    clientsStore.deleteClient(id);
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      clientsStore.deleteClient(deleteTarget.id);
+      setDeleteTarget(null);
+    }
   };
 
   return (
     <div className="space-y-8">
+      <ConfirmDelete
+        open={!!deleteTarget}
+        itemName={deleteTarget?.name}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Clientes</h1>
@@ -129,7 +141,7 @@ const Clients = () => {
                   <td className="p-4 text-sm text-muted-foreground">{client.notes || "—"}</td>
                   <td className="p-4 text-right">
                     <button onClick={() => openEdit(client)} className="text-xs text-muted-foreground hover:text-foreground mr-3 transition-colors">Editar</button>
-                    <button onClick={() => handleDelete(client.id)} className="text-xs text-destructive hover:text-destructive/80 transition-colors">Excluir</button>
+                    <button onClick={() => setDeleteTarget(client)} className="text-xs text-destructive hover:text-destructive/80 transition-colors">Excluir</button>
                   </td>
                 </motion.tr>
               ))}

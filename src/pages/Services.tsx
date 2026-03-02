@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Scissors } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
+import ConfirmDelete from "@/components/ConfirmDelete";
 import { mockServices } from "@/data/mockData";
 import { Service } from "@/types/barbershop";
 
@@ -10,6 +11,7 @@ const Services = () => {
   const [showForm, setShowForm] = useState(false);
   const [editService, setEditService] = useState<Service | null>(null);
   const [form, setForm] = useState({ name: "", costPrice: "", price: "", duration: "", description: "" });
+  const [deleteTarget, setDeleteTarget] = useState<Service | null>(null);
 
   const totalRevenue = services.reduce((a, s) => a + s.price, 0);
 
@@ -44,12 +46,22 @@ const Services = () => {
     setShowForm(false);
   };
 
-  const handleDelete = (id: string) => {
-    setServices((prev) => prev.filter((s) => s.id !== id));
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      setServices((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    }
   };
 
   return (
     <div className="space-y-8">
+      <ConfirmDelete
+        open={!!deleteTarget}
+        itemName={deleteTarget?.name}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Serviços</h1>
@@ -114,7 +126,7 @@ const Services = () => {
                 <span className="text-xs text-muted-foreground">{service.duration} min</span>
                 <div className="flex gap-3">
                   <button onClick={() => openEdit(service)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Editar</button>
-                  <button onClick={() => handleDelete(service.id)} className="text-xs text-destructive hover:text-destructive/80 transition-colors">Excluir</button>
+                  <button onClick={() => setDeleteTarget(service)} className="text-xs text-destructive hover:text-destructive/80 transition-colors">Excluir</button>
                 </div>
               </div>
             </div>
