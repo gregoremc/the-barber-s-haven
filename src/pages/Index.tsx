@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   DollarSign,
   Package,
@@ -10,7 +11,27 @@ import StatCard from "@/components/StatCard";
 import MotionContainer from "@/components/MotionContainer";
 import { mockAppointments, mockProducts, mockServices, mockBills } from "@/data/mockData";
 
+const HIDDEN_KEY = "dashboard_hidden_cards";
+
+const getHidden = (): Record<string, boolean> => {
+  try {
+    return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "{}");
+  } catch {
+    return {};
+  }
+};
+
 const Dashboard = () => {
+  const [hiddenCards, setHiddenCards] = useState<Record<string, boolean>>(getHidden);
+
+  const toggle = (key: string) => {
+    setHiddenCards((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem(HIDDEN_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
   const todayAppointments = mockAppointments.filter(
     (a) => a.date === "2026-03-02" && a.status === "scheduled"
   ).length;
@@ -45,6 +66,8 @@ const Dashboard = () => {
           trendUp
           delay={0}
           hideable
+          hidden={!!hiddenCards.revenue}
+          onToggleVisibility={() => toggle("revenue")}
         />
         <StatCard
           label="Agendamentos Hoje"
@@ -58,6 +81,8 @@ const Dashboard = () => {
           icon={Package}
           delay={0.1}
           hideable
+          hidden={!!hiddenCards.stock}
+          onToggleVisibility={() => toggle("stock")}
         />
         <StatCard
           label="Contas Pendentes"
@@ -66,6 +91,8 @@ const Dashboard = () => {
           trend="3 contas em aberto"
           delay={0.15}
           hideable
+          hidden={!!hiddenCards.bills}
+          onToggleVisibility={() => toggle("bills")}
         />
       </div>
 

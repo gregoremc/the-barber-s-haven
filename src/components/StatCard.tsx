@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { LucideIcon, Eye, EyeOff } from "lucide-react";
 
@@ -10,10 +9,12 @@ interface StatCardProps {
   trendUp?: boolean;
   delay?: number;
   hideable?: boolean;
+  hidden?: boolean;
+  onToggleVisibility?: () => void;
 }
 
-const StatCard = ({ label, value, icon: Icon, trend, trendUp, delay = 0, hideable = false }: StatCardProps) => {
-  const [visible, setVisible] = useState(true);
+const StatCard = ({ label, value, icon: Icon, trend, trendUp, delay = 0, hideable = false, hidden = false, onToggleVisibility }: StatCardProps) => {
+  const visible = !hidden;
 
   return (
     <motion.div
@@ -28,7 +29,7 @@ const StatCard = ({ label, value, icon: Icon, trend, trendUp, delay = 0, hideabl
             <p className="stat-label">{label}</p>
             {hideable && (
               <button
-                onClick={() => setVisible(!visible)}
+                onClick={onToggleVisibility}
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 {visible ? <Eye size={14} strokeWidth={1.5} /> : <EyeOff size={14} strokeWidth={1.5} />}
