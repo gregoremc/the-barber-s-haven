@@ -36,6 +36,10 @@ const Dashboard = () => {
     (a) => a.date === "2026-03-02" && a.status === "scheduled"
   ).length;
 
+  const todayCompleted = mockAppointments.filter(
+    (a) => a.date === "2026-03-02" && a.status === "completed"
+  ).length;
+
   const totalProductsValue = mockProducts.reduce(
     (acc, p) => acc + p.sellPrice * p.stock,
     0
@@ -73,6 +77,8 @@ const Dashboard = () => {
           label="Agendamentos Hoje"
           value={String(todayAppointments)}
           icon={CalendarDays}
+          trend={`${todayCompleted} concluído(s)`}
+          trendUp
           delay={0.05}
         />
         <StatCard
