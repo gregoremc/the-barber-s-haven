@@ -34,6 +34,8 @@ const Bills = () => {
   const [confirmAnticipate, setConfirmAnticipate] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(() => new Date());
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [selectedInstallments, setSelectedInstallments] = useState<string[]>([]);
 
   const selectedMonthStr = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
 
@@ -135,8 +137,24 @@ const Bills = () => {
     }
   };
 
-  const getNextUnpaidCount = (groupId: string) => {
-    return bills.filter((b) => b.recurringGroupId === groupId && b.status !== "paid").length;
+  const paySelectedInstallments = () => {
+    if (selectedInstallments.length === 0) return;
+    selectedInstallments.forEach((id) => billsStore.markPaid(id));
+    const updatedBills = billsStore.getBills();
+    const firstBill = updatedBills.find((b) => b.id === selectedInstallments[0]);
+    if (firstBill?.recurringGroupId) {
+      const group = updatedBills.filter((b) => b.recurringGroupId === firstBill.recurringGroupId);
+      if (group.every((b) => b.status === "paid")) {
+        setCelebrateGroup(firstBill.recurringGroupId);
+      }
+    }
+    setSelectedInstallments([]);
+  };
+
+  const toggleInstallment = (id: string) => {
+    setSelectedInstallments((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
   };
 
   const handleAttach = (billId: string) => {
@@ -542,119 +560,233 @@ const Bills = () => {
         ))}
       </div>
 
-      {/* Anticipate recurring section */}
-      {activeTab !== "single" && Object.entries(recurringGroups).some(([, g]) => g.some((b) => b.status !== "paid")) && (
-        <MotionContainer delay={0.1}>
-          <div className="organic-card space-y-3">
-            <h3 className="section-title flex items-center gap-2">
-              <FastForward size={16} className="text-accent" />
-              Antecipar Recorrências
-            </h3>
-            <div className="space-y-2">
-              {Object.entries(recurringGroups)
-                .filter(([, g]) => g.some((b) => b.status !== "paid"))
-                .map(([groupId, group]) => {
-                  const unpaid = getNextUnpaidCount(groupId);
-                  const baseName = group[0].description.replace(/\s*\(\d+\/\d+\)/, "");
-                  return (
-                    <div key={groupId} className="flex items-center justify-between bg-secondary/40 rounded-xl px-4 py-3">
-                      <div>
-                        <span className="text-sm font-medium">{baseName}</span>
-                        <span className="text-xs text-muted-foreground ml-2">({unpaid} parcela{unpaid > 1 ? "s" : ""} restante{unpaid > 1 ? "s" : ""})</span>
+      {/* Recurring groups view */}
+      {activeTab === "recurring" && (
+        <div className="space-y-3">
+          {Object.entries(recurringGroups).length === 0 ? (
+            <MotionContainer>
+              <div className="organic-card text-center py-12">
+                <p className="text-muted-foreground font-light">Nenhuma conta recorrente cadastrada</p>
+              </div>
+            </MotionContainer>
+          ) : (
+            Object.entries(recurringGroups).map(([groupId, group], i) => {
+              const baseName = group[0].description.replace(/\s*\(\d+\/\d+\)/, "");
+              const unpaidCount = group.filter((b) => b.status !== "paid").length;
+              const paidCount = group.filter((b) => b.status === "paid").length;
+              const isExpanded = expandedGroup === groupId;
+              const allPaid = unpaidCount === 0;
+
+              return (
+                <MotionContainer key={groupId} delay={i * 0.03}>
+                  <div className="organic-card !p-0 overflow-hidden">
+                    {/* Group header */}
+                    <button
+                      onClick={() => {
+                        setExpandedGroup(isExpanded ? null : groupId);
+                        setSelectedInstallments([]);
+                      }}
+                      className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-accent/10">
+                          <RefreshCw size={16} className="text-accent" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-medium">{baseName}</p>
+                          <p className="text-xs text-muted-foreground font-light">
+                            {group.length} parcelas · R$ {group[0].amount.toLocaleString("pt-BR")}/mês
+                          </p>
+                        </div>
                       </div>
-                      <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => setConfirmAnticipate(groupId)}
-                        className="text-xs text-accent flex items-center gap-1 font-medium"
-                      >
-                        <FastForward size={14} /> Quitar todas
-                      </motion.button>
-                    </div>
+                      <div className="flex items-center gap-3">
+                        {allPaid ? (
+                          <span className="text-xs px-3 py-1 rounded-full font-medium bg-success/10 text-success">Quitada</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            {paidCount}/{group.length} pagas
+                          </span>
+                        )}
+                        <ChevronRight size={16} className={`text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                      </div>
+                    </button>
+
+                    {/* Expanded installments */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="border-t border-border/40 p-4 space-y-2">
+                            {group.map((bill) => {
+                              const isPaid = bill.status === "paid";
+                              const isSelected = selectedInstallments.includes(bill.id);
+                              return (
+                                <div
+                                  key={bill.id}
+                                  className={cn(
+                                    "flex items-center gap-3 rounded-xl px-4 py-3 transition-all",
+                                    isPaid ? "bg-success/5 opacity-60" : isSelected ? "bg-primary/5 ring-1 ring-primary/20" : "bg-secondary/40"
+                                  )}
+                                >
+                                  {!isPaid && (
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={() => toggleInstallment(bill.id)}
+                                    />
+                                  )}
+                                  {isPaid && (
+                                    <CheckCircle2 size={16} className="text-success" />
+                                  )}
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium">{bill.description}</p>
+                                    <p className="text-xs text-muted-foreground font-light">
+                                      Vence em {bill.dueDate ? new Date(bill.dueDate + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-sm font-medium">R$ {bill.amount.toLocaleString("pt-BR")}</p>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusConfig[bill.status].className}`}>
+                                      {statusConfig[bill.status].label}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {/* Action buttons */}
+                            {unpaidCount > 0 && (
+                              <div className="flex items-center justify-between pt-3 border-t border-border/30">
+                                <div className="flex items-center gap-2">
+                                  {selectedInstallments.length > 0 && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {selectedInstallments.length} selecionada{selectedInstallments.length > 1 ? "s" : ""} ·
+                                      R$ {selectedInstallments.reduce((acc, id) => {
+                                        const b = group.find((b) => b.id === id);
+                                        return acc + (b?.amount || 0);
+                                      }, 0).toLocaleString("pt-BR")}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  {selectedInstallments.length > 0 && (
+                                    <motion.button
+                                      whileHover={{ scale: 1.03 }}
+                                      whileTap={{ scale: 0.97 }}
+                                      onClick={paySelectedInstallments}
+                                      className="organic-btn-primary text-xs flex items-center gap-1.5 !py-2 !px-4"
+                                    >
+                                      <CheckCircle2 size={14} />
+                                      Quitar selecionadas
+                                    </motion.button>
+                                  )}
+                                  <motion.button
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={() => setConfirmAnticipate(groupId)}
+                                    className="organic-btn-secondary text-xs flex items-center gap-1.5 !py-2 !px-4"
+                                  >
+                                    <FastForward size={14} />
+                                    Quitar todas
+                                  </motion.button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </MotionContainer>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Table for non-recurring tabs */}
+      {activeTab !== "recurring" && (
+        <MotionContainer delay={0.15}>
+          <div className="organic-card overflow-hidden !p-0">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border/50">
+                  <th className="text-left p-4 text-xs text-muted-foreground font-medium">Descrição</th>
+                  <th className="text-left p-4 text-xs text-muted-foreground font-medium hidden md:table-cell">Categoria</th>
+                  <th className="text-right p-4 text-xs text-muted-foreground font-medium">Valor</th>
+                  <th className="text-left p-4 text-xs text-muted-foreground font-medium hidden md:table-cell">Vencimento</th>
+                  <th className="text-left p-4 text-xs text-muted-foreground font-medium">Status</th>
+                  <th className="text-right p-4 text-xs text-muted-foreground font-medium">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredBills.map((bill) => {
+                  const status = statusConfig[bill.status];
+                  return (
+                    <motion.tr
+                      key={bill.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="border-b border-border/30 last:border-0 hover:bg-secondary/30 transition-colors"
+                    >
+                      <td className="p-4 text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          {bill.isRecurring && <RefreshCw size={12} className="text-accent" />}
+                          {bill.description}
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm text-muted-foreground hidden md:table-cell">{bill.category}</td>
+                      <td className="p-4 text-sm text-right font-medium">R$ {bill.amount.toLocaleString("pt-BR")}</td>
+                      <td className="p-4 text-sm text-muted-foreground hidden md:table-cell">
+                        {bill.dueDate ? new Date(bill.dueDate + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
+                      </td>
+                      <td className="p-4">
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${status.className}`}>
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex items-center gap-2 justify-end">
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setShowDocFolder(bill.id)}
+                            className="text-muted-foreground hover:text-accent"
+                            title="Documentos"
+                          >
+                            <FolderOpen size={14} />
+                          </motion.button>
+                          {bill.status !== "paid" && (
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => markPaid(bill.id)}
+                              className="text-xs text-success flex items-center gap-1"
+                            >
+                              <CheckCircle2 size={14} /> Pagar
+                            </motion.button>
+                          )}
+                        </div>
+                      </td>
+                    </motion.tr>
                   );
                 })}
-            </div>
+                {filteredBills.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-sm text-muted-foreground">
+                      Nenhuma conta encontrada.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </MotionContainer>
       )}
-
-      {/* Table */}
-      <MotionContainer delay={0.15}>
-        <div className="organic-card overflow-hidden !p-0">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border/50">
-                <th className="text-left p-4 text-xs text-muted-foreground font-medium">Descrição</th>
-                <th className="text-left p-4 text-xs text-muted-foreground font-medium hidden md:table-cell">Categoria</th>
-                <th className="text-right p-4 text-xs text-muted-foreground font-medium">Valor</th>
-                <th className="text-left p-4 text-xs text-muted-foreground font-medium hidden md:table-cell">Vencimento</th>
-                <th className="text-left p-4 text-xs text-muted-foreground font-medium">Status</th>
-                <th className="text-right p-4 text-xs text-muted-foreground font-medium">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBills.map((bill) => {
-                const status = statusConfig[bill.status];
-                return (
-                  <motion.tr
-                    key={bill.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="border-b border-border/30 last:border-0 hover:bg-secondary/30 transition-colors"
-                  >
-                    <td className="p-4 text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        {bill.isRecurring && <RefreshCw size={12} className="text-accent" />}
-                        {bill.description}
-                      </div>
-                    </td>
-                    <td className="p-4 text-sm text-muted-foreground hidden md:table-cell">{bill.category}</td>
-                    <td className="p-4 text-sm text-right font-medium">R$ {bill.amount.toLocaleString("pt-BR")}</td>
-                    <td className="p-4 text-sm text-muted-foreground hidden md:table-cell">
-                      {bill.dueDate ? new Date(bill.dueDate + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
-                    </td>
-                    <td className="p-4">
-                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${status.className}`}>
-                        {status.label}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center gap-2 justify-end">
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => setShowDocFolder(bill.id)}
-                          className="text-muted-foreground hover:text-accent"
-                          title="Documentos"
-                        >
-                          <FolderOpen size={14} />
-                        </motion.button>
-                        {bill.status !== "paid" && (
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => markPaid(bill.id)}
-                            className="text-xs text-success flex items-center gap-1"
-                          >
-                            <CheckCircle2 size={14} /> Pagar
-                          </motion.button>
-                        )}
-                      </div>
-                    </td>
-                  </motion.tr>
-                );
-              })}
-              {filteredBills.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-sm text-muted-foreground">
-                    Nenhuma conta encontrada.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </MotionContainer>
     </div>
   );
 };
