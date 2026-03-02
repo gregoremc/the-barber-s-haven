@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, Package } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import { mockProducts } from "@/data/mockData";
 import { Product } from "@/types/barbershop";
+import { trashStore } from "@/data/trashStore";
+import { registerRestoreHandler } from "@/pages/Trash";
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>(mockProducts);
@@ -13,6 +15,12 @@ const Products = () => {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [form, setForm] = useState({ name: "", category: "", costPrice: "", sellPrice: "", stock: "" });
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+
+  useEffect(() => {
+    registerRestoreHandler("product", (item) => {
+      setProducts((prev) => [...prev, item.data as Product]);
+    });
+  }, []);
 
   const filtered = products.filter(
     (p) =>
@@ -70,6 +78,7 @@ const Products = () => {
 
   const confirmDelete = () => {
     if (deleteTarget) {
+      trashStore.addItem({ type: "product", typeLabel: "Produto", name: deleteTarget.name, data: deleteTarget });
       setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
       setDeleteTarget(null);
     }

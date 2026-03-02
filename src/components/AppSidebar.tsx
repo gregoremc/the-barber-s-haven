@@ -13,6 +13,7 @@ import {
   UserCheck,
   Moon,
   Sun,
+  Trash2,
 } from "lucide-react";
 
 const navItems = [
@@ -74,6 +75,21 @@ const AppSidebar = () => {
       </nav>
 
       <div className="p-6 space-y-3">
+        <NavLink to="/trash">
+          <motion.div
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors duration-200 ${
+              location.pathname === "/trash"
+                ? "bg-primary text-primary-foreground font-medium"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <Trash2 size={18} strokeWidth={1.5} />
+            <span>Lixeira</span>
+          </motion.div>
+        </NavLink>
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}

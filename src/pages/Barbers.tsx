@@ -1,10 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Edit2, Trash2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import { mockBarbers, mockAppointments, mockServices, mockProducts } from "@/data/mockData";
 import { Barber, BarberAttachment } from "@/types/barbershop";
+import { trashStore } from "@/data/trashStore";
+import { registerRestoreHandler } from "@/pages/Trash";
 
 const Barbers = () => {
   const [barbers, setBarbers] = useState<Barber[]>(mockBarbers);
@@ -14,6 +16,12 @@ const Barbers = () => {
   const [form, setForm] = useState({ name: "", cpfCnpj: "", address: "", phone: "", commission: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteTarget, setDeleteTarget] = useState<Barber | null>(null);
+
+  useEffect(() => {
+    registerRestoreHandler("barber", (item) => {
+      setBarbers((prev) => [...prev, item.data as Barber]);
+    });
+  }, []);
 
   const resetForm = () => {
     setForm({ name: "", cpfCnpj: "", address: "", phone: "", commission: "" });
@@ -56,6 +64,7 @@ const Barbers = () => {
 
   const confirmDelete = () => {
     if (deleteTarget) {
+      trashStore.addItem({ type: "barber", typeLabel: "Barbeiro", name: deleteTarget.name, data: deleteTarget });
       setBarbers((prev) => prev.filter((b) => b.id !== deleteTarget.id));
       if (selectedBarberId === deleteTarget.id) setSelectedBarberId(null);
       setDeleteTarget(null);
