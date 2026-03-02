@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, Package } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
+import ConfirmDelete from "@/components/ConfirmDelete";
 import { mockProducts } from "@/data/mockData";
 import { Product } from "@/types/barbershop";
 
@@ -11,6 +12,7 @@ const Products = () => {
   const [showForm, setShowForm] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [form, setForm] = useState({ name: "", category: "", costPrice: "", sellPrice: "", stock: "" });
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
   const filtered = products.filter(
     (p) =>
@@ -66,12 +68,22 @@ const Products = () => {
     setShowForm(false);
   };
 
-  const handleDelete = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    }
   };
 
   return (
     <div className="space-y-8">
+      <ConfirmDelete
+        open={!!deleteTarget}
+        itemName={deleteTarget?.name}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Produtos</h1>
@@ -168,7 +180,7 @@ const Products = () => {
                   <td className="p-4 text-sm text-right">{product.stock}</td>
                   <td className="p-4 text-right">
                     <button onClick={() => openEdit(product)} className="text-xs text-muted-foreground hover:text-foreground mr-3 transition-colors">Editar</button>
-                    <button onClick={() => handleDelete(product.id)} className="text-xs text-destructive hover:text-destructive/80 transition-colors">Excluir</button>
+                    <button onClick={() => setDeleteTarget(product)} className="text-xs text-destructive hover:text-destructive/80 transition-colors">Excluir</button>
                   </td>
                 </motion.tr>
               ))}
