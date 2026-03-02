@@ -26,6 +26,7 @@ export interface Barber {
   paymentDay?: number; // day of month (1-31)
   avatar?: string;
   attachments?: BarberAttachment[];
+  active?: boolean; // defaults to true
 }
 
 export interface BarberAttachment {

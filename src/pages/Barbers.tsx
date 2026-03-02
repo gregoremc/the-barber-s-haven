@@ -1,18 +1,35 @@
 import { useState, useRef, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Plus, Edit2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus, Power } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { mockAppointments, mockServices, mockProducts } from "@/data/mockData";
 import { Barber, BarberAttachment } from "@/types/barbershop";
 import { barbersStore } from "@/data/barbersStore";
+import { paymentsStore } from "@/data/paymentsStore";
+import { toast } from "sonner";
 
 const Barbers = () => {
   const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
+  const allPayments = useSyncExternalStore(paymentsStore.subscribe, paymentsStore.getPayments);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", cpfCnpj: "", address: "", phone: "", commission: "", paymentDay: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const toggleBarberActive = (barber: Barber) => {
+    const isActive = barber.active !== false;
+    if (isActive) {
+      // Trying to deactivate — check pending payments
+      const pendingPayments = allPayments.filter((p) => p.barberId === barber.id && p.status === "pending");
+      if (pendingPayments.length > 0) {
+        toast.error(`Não é possível desativar ${barber.name}. Existem ${pendingPayments.length} pagamento(s) pendente(s).`);
+        return;
+      }
+    }
+    barbersStore.updateBarber(barber.id, { active: !isActive });
+    toast.success(isActive ? `${barber.name} desativado` : `${barber.name} ativado`);
+  };
 
 
 
@@ -232,19 +249,25 @@ const Barbers = () => {
       <div className="space-y-3">
         {barbers.map((barber, i) => {
           const isSelected = selectedBarberId === barber.id;
+          const isActive = barber.active !== false;
           return (
             <MotionContainer key={barber.id} delay={i * 0.03}>
               <div
-                className={`organic-card !p-4 cursor-pointer transition-all duration-200 ${isSelected ? "ring-2 ring-primary/30" : ""}`}
+                className={`organic-card !p-4 cursor-pointer transition-all duration-200 ${isSelected ? "ring-2 ring-primary/30" : ""} ${!isActive ? "opacity-60" : ""}`}
                 onClick={() => setSelectedBarberId(isSelected ? null : barber.id)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User size={18} className="text-primary" />
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? "bg-primary/10" : "bg-muted"}`}>
+                      <User size={18} className={isActive ? "text-primary" : "text-muted-foreground"} />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{barber.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{barber.name}</p>
+                        {!isActive && (
+                          <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Inativo</span>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground font-light">{barber.phone} · {barber.cpfCnpj || "Sem CPF"}</p>
                       <p className="text-xs text-muted-foreground font-light">{barber.address || "Sem endereço"}</p>
                     </div>
@@ -261,13 +284,20 @@ const Barbers = () => {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
+                      onClick={(e) => { e.stopPropagation(); toggleBarberActive(barber); }}
+                      className={`p-1.5 rounded-full transition-colors ${isActive ? "hover:bg-success/10" : "hover:bg-destructive/10"}`}
+                      title={isActive ? "Desativar barbeiro" : "Ativar barbeiro"}
+                    >
+                      <Power size={14} className={isActive ? "text-success" : "text-destructive"} />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={(e) => { e.stopPropagation(); handleEdit(barber); }}
                       className="p-1.5 rounded-full hover:bg-secondary transition-colors"
                     >
                       <Edit2 size={14} className="text-muted-foreground" />
                     </motion.button>
-
-
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
