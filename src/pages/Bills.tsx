@@ -25,16 +25,45 @@ const Bills = () => {
   const [attachName, setAttachName] = useState("");
   const [celebrateGroup, setCelebrateGroup] = useState<string | null>(null);
   const [confirmAnticipate, setConfirmAnticipate] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date());
 
-  const totalPending = bills.filter((b) => b.status !== "paid").reduce((a, b) => a + b.amount, 0);
-  const totalPaid = bills.filter((b) => b.status === "paid").reduce((a, b) => a + b.amount, 0);
-  const overdueCount = bills.filter((b) => b.status === "overdue").length;
+  const selectedMonthStr = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
+
+  const navigateMonth = (dir: number) => {
+    setSelectedMonth((prev) => {
+      const next = new Date(prev);
+      next.setMonth(next.getMonth() + dir);
+      return next;
+    });
+  };
+
+  const goToCurrentMonth = () => setSelectedMonth(new Date());
+
+  const isCurrentMonth = () => {
+    const now = new Date();
+    return now.getFullYear() === selectedMonth.getFullYear() && now.getMonth() === selectedMonth.getMonth();
+  };
+
+  const formatMonthLabel = (date: Date) =>
+    date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
+  const monthBills = useMemo(() => {
+    return bills.filter((b) => {
+      if (!b.dueDate) return false;
+      const billMonth = b.dueDate.substring(0, 7); // "YYYY-MM"
+      return billMonth === selectedMonthStr;
+    });
+  }, [bills, selectedMonthStr]);
+
+  const totalPending = monthBills.filter((b) => b.status !== "paid").reduce((a, b) => a + b.amount, 0);
+  const totalPaid = monthBills.filter((b) => b.status === "paid").reduce((a, b) => a + b.amount, 0);
+  const overdueCount = monthBills.filter((b) => b.status === "overdue").length;
 
   const filteredBills = useMemo(() => {
-    if (activeTab === "recurring") return bills.filter((b) => b.isRecurring);
-    if (activeTab === "single") return bills.filter((b) => !b.isRecurring);
-    return bills;
-  }, [bills, activeTab]);
+    if (activeTab === "recurring") return monthBills.filter((b) => b.isRecurring);
+    if (activeTab === "single") return monthBills.filter((b) => !b.isRecurring);
+    return monthBills;
+  }, [monthBills, activeTab]);
 
   const handleSave = () => {
     if (!form.description || !form.amount) return;
@@ -323,6 +352,37 @@ const Bills = () => {
         >
           <Plus size={16} />
           Nova Conta
+        </motion.button>
+      </div>
+
+      {/* Month Navigation */}
+      <div className="flex items-center justify-between organic-card !py-3 !px-5">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => navigateMonth(-1)}
+          className="p-2 rounded-xl hover:bg-secondary transition-colors"
+        >
+          <ChevronLeft size={20} className="text-muted-foreground" />
+        </motion.button>
+        <div className="text-center">
+          <p className="text-sm font-medium capitalize">{formatMonthLabel(selectedMonth)}</p>
+          {!isCurrentMonth() && (
+            <button onClick={goToCurrentMonth} className="text-xs text-primary hover:underline mt-0.5">
+              Voltar para mês atual
+            </button>
+          )}
+          {isCurrentMonth() && (
+            <p className="text-xs text-muted-foreground mt-0.5">Mês atual</p>
+          )}
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => navigateMonth(1)}
+          className="p-2 rounded-xl hover:bg-secondary transition-colors"
+        >
+          <ChevronRight size={20} className="text-muted-foreground" />
         </motion.button>
       </div>
 
