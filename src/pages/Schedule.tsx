@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Clock, CheckCircle2, XCircle, X, ChevronLeft, ChevronRight, PlusCircle, Trash2 } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
+import ClientSearch from "@/components/ClientSearch";
 import { mockAppointments, mockBarbers, mockServices } from "@/data/mockData";
 import { Appointment } from "@/types/barbershop";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -187,7 +188,7 @@ const Schedule = () => {
           >
             <h3 className="section-title">Novo Agendamento — {formatDateBR(selectedDate)}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <input placeholder="Nome do Cliente" value={form.clientName} onChange={(e) => setForm({ ...form, clientName: e.target.value })} className="organic-input" />
+              <ClientSearch value={form.clientName} onChange={(name) => setForm({ ...form, clientName: name })} />
               <select value={form.barberId} onChange={(e) => setForm({ ...form, barberId: e.target.value })} className="organic-input">
                 <option value="">Selecione o Barbeiro</option>
                 {mockBarbers.map((b) => (
