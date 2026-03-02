@@ -10,6 +10,7 @@ export interface Product {
 export interface Service {
   id: string;
   name: string;
+  costPrice: number;
   price: number;
   duration: number; // minutes
   description: string;

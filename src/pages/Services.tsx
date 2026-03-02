@@ -9,19 +9,19 @@ const Services = () => {
   const [services, setServices] = useState<Service[]>(mockServices);
   const [showForm, setShowForm] = useState(false);
   const [editService, setEditService] = useState<Service | null>(null);
-  const [form, setForm] = useState({ name: "", price: "", duration: "", description: "" });
+  const [form, setForm] = useState({ name: "", costPrice: "", price: "", duration: "", description: "" });
 
   const totalRevenue = services.reduce((a, s) => a + s.price, 0);
 
   const openNew = () => {
     setEditService(null);
-    setForm({ name: "", price: "", duration: "", description: "" });
+    setForm({ name: "", costPrice: "", price: "", duration: "", description: "" });
     setShowForm(true);
   };
 
   const openEdit = (s: Service) => {
     setEditService(s);
-    setForm({ name: s.name, price: String(s.price), duration: String(s.duration), description: s.description });
+    setForm({ name: s.name, costPrice: String(s.costPrice), price: String(s.price), duration: String(s.duration), description: s.description });
     setShowForm(true);
   };
 
@@ -31,14 +31,14 @@ const Services = () => {
       setServices((prev) =>
         prev.map((s) =>
           s.id === editService.id
-            ? { ...s, name: form.name, price: Number(form.price), duration: Number(form.duration), description: form.description }
+            ? { ...s, name: form.name, costPrice: Number(form.costPrice), price: Number(form.price), duration: Number(form.duration), description: form.description }
             : s
         )
       );
     } else {
       setServices((prev) => [
         ...prev,
-        { id: String(Date.now()), name: form.name, price: Number(form.price), duration: Number(form.duration), description: form.description },
+        { id: String(Date.now()), name: form.name, costPrice: Number(form.costPrice), price: Number(form.price), duration: Number(form.duration), description: form.description },
       ]);
     }
     setShowForm(false);
@@ -79,7 +79,8 @@ const Services = () => {
             <h3 className="section-title">{editService ? "Editar Serviço" : "Novo Serviço"}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input placeholder="Nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="organic-input" />
-              <input placeholder="Preço (R$)" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="organic-input" />
+              <input placeholder="Preço de Custo (R$)" type="number" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: e.target.value })} className="organic-input" />
+              <input placeholder="Preço de Venda (R$)" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="organic-input" />
               <input placeholder="Duração (min)" type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="organic-input" />
               <input placeholder="Descrição" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="organic-input" />
             </div>
@@ -99,7 +100,10 @@ const Services = () => {
                 <div className="p-2.5 rounded-xl bg-secondary">
                   <Scissors size={18} strokeWidth={1.5} className="text-muted-foreground" />
                 </div>
-                <span className="text-xl font-medium">R$ {service.price.toFixed(2)}</span>
+                <div className="text-right">
+                  <span className="text-xl font-medium">R$ {service.price.toFixed(2)}</span>
+                  <p className="text-xs text-muted-foreground font-light">Custo: R$ {service.costPrice.toFixed(2)}</p>
+                </div>
               </div>
               <div>
                 <h3 className="text-sm font-medium">{service.name}</h3>

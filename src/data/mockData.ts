@@ -9,11 +9,11 @@ export const mockProducts: Product[] = [
 ];
 
 export const mockServices: Service[] = [
-  { id: "1", name: "Corte Masculino", price: 50, duration: 40, description: "Corte completo com máquina e tesoura" },
-  { id: "2", name: "Barba", price: 35, duration: 30, description: "Barba com toalha quente e navalha" },
-  { id: "3", name: "Corte + Barba", price: 75, duration: 60, description: "Combo completo corte e barba" },
-  { id: "4", name: "Pigmentação", price: 80, duration: 45, description: "Pigmentação capilar completa" },
-  { id: "5", name: "Sobrancelha", price: 20, duration: 15, description: "Design de sobrancelha masculina" },
+  { id: "1", name: "Corte Masculino", costPrice: 10, price: 50, duration: 40, description: "Corte completo com máquina e tesoura" },
+  { id: "2", name: "Barba", costPrice: 5, price: 35, duration: 30, description: "Barba com toalha quente e navalha" },
+  { id: "3", name: "Corte + Barba", costPrice: 12, price: 75, duration: 60, description: "Combo completo corte e barba" },
+  { id: "4", name: "Pigmentação", costPrice: 25, price: 80, duration: 45, description: "Pigmentação capilar completa" },
+  { id: "5", name: "Sobrancelha", costPrice: 3, price: 20, duration: 15, description: "Design de sobrancelha masculina" },
 ];
 
 export const mockBarbers: Barber[] = [
