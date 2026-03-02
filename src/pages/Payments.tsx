@@ -1,10 +1,17 @@
-import { useSyncExternalStore, useState } from "react";
+import { useSyncExternalStore, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Users, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plus, Users, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { paymentsStore } from "@/data/paymentsStore";
 import { barbersStore } from "@/data/barbersStore";
 import { Barber } from "@/types/barbershop";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+const MONTH_NAMES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
 
 const getPaymentAlerts = (barbersList: Barber[]) => {
   const today = new Date();
@@ -32,9 +39,38 @@ const Payments = () => {
   const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ barberId: "", amount: "", date: "", description: "" });
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date());
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
 
-  const totalPaid = payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
-  const totalPending = payments.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0);
+  const selectedMonthStr = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
+
+  const navigateMonth = (dir: number) => {
+    setSelectedMonth((prev) => {
+      const next = new Date(prev);
+      next.setMonth(next.getMonth() + dir);
+      return next;
+    });
+  };
+
+  const goToCurrentMonth = () => setSelectedMonth(new Date());
+
+  const isCurrentMonth = () => {
+    const now = new Date();
+    return now.getFullYear() === selectedMonth.getFullYear() && now.getMonth() === selectedMonth.getMonth();
+  };
+
+  const formatMonthLabel = (date: Date) =>
+    date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
+  const monthPayments = useMemo(() => {
+    return payments.filter((p) => {
+      if (!p.date) return false;
+      return p.date.substring(0, 7) === selectedMonthStr;
+    });
+  }, [payments, selectedMonthStr]);
+
+  const totalPaid = monthPayments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
+  const totalPending = monthPayments.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0);
   const alerts = getPaymentAlerts(barbers);
 
   const handleSave = () => {
@@ -67,6 +103,81 @@ const Payments = () => {
         >
           <Plus size={16} />
           Novo Pagamento
+        </motion.button>
+      </div>
+
+      {/* Month Navigation */}
+      <div className="flex items-center justify-between organic-card !py-3 !px-5">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => navigateMonth(-1)}
+          className="p-2 rounded-xl hover:bg-secondary transition-colors"
+        >
+          <ChevronLeft size={20} className="text-muted-foreground" />
+        </motion.button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="text-center cursor-pointer hover:opacity-80 transition-opacity">
+              <p className="text-sm font-medium capitalize">{formatMonthLabel(selectedMonth)}</p>
+              {!isCurrentMonth() && (
+                <button onClick={(e) => { e.stopPropagation(); goToCurrentMonth(); }} className="text-xs text-primary hover:underline mt-0.5">
+                  Voltar para mês atual
+                </button>
+              )}
+              {isCurrentMonth() && (
+                <p className="text-xs text-muted-foreground mt-0.5">Mês atual</p>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-4 pointer-events-auto" align="center">
+            <div className="flex items-center justify-between mb-3">
+              <button
+                onClick={() => setPickerYear((y) => y - 1)}
+                className="p-1 rounded hover:bg-secondary transition-colors"
+              >
+                <ChevronLeft size={16} className="text-muted-foreground" />
+              </button>
+              <span className="text-sm font-medium">{pickerYear}</span>
+              <button
+                onClick={() => setPickerYear((y) => y + 1)}
+                className="p-1 rounded hover:bg-secondary transition-colors"
+              >
+                <ChevronRight size={16} className="text-muted-foreground" />
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {MONTH_NAMES.map((name, i) => {
+                const isSelected = selectedMonth.getFullYear() === pickerYear && selectedMonth.getMonth() === i;
+                const now = new Date();
+                const isCurrent = now.getFullYear() === pickerYear && now.getMonth() === i;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedMonth(new Date(pickerYear, i, 1))}
+                    className={cn(
+                      "text-xs py-2 px-1 rounded-lg transition-all font-medium",
+                      isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : isCurrent
+                          ? "bg-primary/10 text-primary hover:bg-primary/20"
+                          : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {name.substring(0, 3)}
+                  </button>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => navigateMonth(1)}
+          className="p-2 rounded-xl hover:bg-secondary transition-colors"
+        >
+          <ChevronRight size={20} className="text-muted-foreground" />
         </motion.button>
       </div>
 
@@ -149,7 +260,7 @@ const Payments = () => {
       </AnimatePresence>
 
       {barbers.map((barber, i) => {
-        const barberPayments = payments.filter((p) => p.barberId === barber.id);
+        const barberPayments = monthPayments.filter((p) => p.barberId === barber.id);
         if (barberPayments.length === 0) return null;
         return (
           <MotionContainer key={barber.id} delay={i * 0.05}>
@@ -196,6 +307,14 @@ const Payments = () => {
           </MotionContainer>
         );
       })}
+
+      {monthPayments.length === 0 && (
+        <MotionContainer>
+          <div className="organic-card text-center py-12">
+            <p className="text-muted-foreground font-light">Nenhum pagamento neste mês</p>
+          </div>
+        </MotionContainer>
+      )}
     </div>
   );
 };
