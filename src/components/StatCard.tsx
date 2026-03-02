@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Eye, EyeOff } from "lucide-react";
 
 interface StatCardProps {
   label: string;
@@ -8,9 +9,12 @@ interface StatCardProps {
   trend?: string;
   trendUp?: boolean;
   delay?: number;
+  hideable?: boolean;
 }
 
-const StatCard = ({ label, value, icon: Icon, trend, trendUp, delay = 0 }: StatCardProps) => {
+const StatCard = ({ label, value, icon: Icon, trend, trendUp, delay = 0, hideable = false }: StatCardProps) => {
+  const [visible, setVisible] = useState(true);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -20,11 +24,21 @@ const StatCard = ({ label, value, icon: Icon, trend, trendUp, delay = 0 }: StatC
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="stat-label">{label}</p>
-          <p className="stat-value mt-2">{value}</p>
+          <div className="flex items-center gap-2">
+            <p className="stat-label">{label}</p>
+            {hideable && (
+              <button
+                onClick={() => setVisible(!visible)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {visible ? <Eye size={14} strokeWidth={1.5} /> : <EyeOff size={14} strokeWidth={1.5} />}
+              </button>
+            )}
+          </div>
+          <p className="stat-value mt-2">{visible ? value : "••••••"}</p>
           {trend && (
             <p className={`text-xs mt-2 font-light ${trendUp ? "text-success" : "text-destructive"}`}>
-              {trend}
+              {visible ? trend : ""}
             </p>
           )}
         </div>
