@@ -19,9 +19,19 @@ export interface Service {
 export interface Barber {
   id: string;
   name: string;
+  cpfCnpj: string;
+  address: string;
   phone: string;
   commission: number; // percentage
   avatar?: string;
+  attachments?: BarberAttachment[];
+}
+
+export interface BarberAttachment {
+  id: string;
+  name: string;
+  url: string;
+  date: string;
 }
 
 export interface Appointment {
