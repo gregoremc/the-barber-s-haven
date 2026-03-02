@@ -10,13 +10,13 @@ const Barbers = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", cpfCnpj: "", address: "", phone: "", commission: "" });
+  const [form, setForm] = useState({ name: "", cpfCnpj: "", address: "", phone: "", commission: "", paymentDay: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
 
   const resetForm = () => {
-    setForm({ name: "", cpfCnpj: "", address: "", phone: "", commission: "" });
+    setForm({ name: "", cpfCnpj: "", address: "", phone: "", commission: "", paymentDay: "" });
     setEditingId(null);
     setShowForm(false);
   };
@@ -27,7 +27,7 @@ const Barbers = () => {
       setBarbers((prev) =>
         prev.map((b) =>
           b.id === editingId
-            ? { ...b, name: form.name, cpfCnpj: form.cpfCnpj, address: form.address, phone: form.phone, commission: Number(form.commission) || b.commission }
+            ? { ...b, name: form.name, cpfCnpj: form.cpfCnpj, address: form.address, phone: form.phone, commission: Number(form.commission) || b.commission, paymentDay: Number(form.paymentDay) || undefined }
             : b
         )
       );
@@ -41,6 +41,7 @@ const Barbers = () => {
           address: form.address,
           phone: form.phone,
           commission: Number(form.commission) || 50,
+          paymentDay: Number(form.paymentDay) || undefined,
           attachments: [],
         },
       ]);
@@ -49,7 +50,7 @@ const Barbers = () => {
   };
 
   const handleEdit = (barber: Barber) => {
-    setForm({ name: barber.name, cpfCnpj: barber.cpfCnpj || "", address: barber.address || "", phone: barber.phone, commission: String(barber.commission) });
+    setForm({ name: barber.name, cpfCnpj: barber.cpfCnpj || "", address: barber.address || "", phone: barber.phone, commission: String(barber.commission), paymentDay: barber.paymentDay ? String(barber.paymentDay) : "" });
     setEditingId(barber.id);
     setShowForm(true);
   };
@@ -221,6 +222,16 @@ const Barbers = () => {
                 onChange={(e) => setForm({ ...form, commission: e.target.value })}
                 className="organic-input"
               />
+              <select
+                value={form.paymentDay}
+                onChange={(e) => setForm({ ...form, paymentDay: e.target.value })}
+                className="organic-input"
+              >
+                <option value="">Dia de Pagamento</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={d}>Dia {d}</option>
+                ))}
+              </select>
             </div>
             <div className="flex gap-3">
               <button onClick={handleSave} className="organic-btn-primary">Salvar</button>
@@ -255,6 +266,11 @@ const Barbers = () => {
                     <span className="text-xs bg-accent/10 text-accent px-3 py-1 rounded-full font-medium">
                       {barber.commission}% comissão
                     </span>
+                    {barber.paymentDay && (
+                      <span className="text-xs bg-secondary text-muted-foreground px-3 py-1 rounded-full">
+                        Pgto dia {barber.paymentDay}
+                      </span>
+                    )}
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}

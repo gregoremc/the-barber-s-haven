@@ -23,6 +23,7 @@ export interface Barber {
   address: string;
   phone: string;
   commission: number; // percentage
+  paymentDay?: number; // day of month (1-31)
   avatar?: string;
   attachments?: BarberAttachment[];
 }
