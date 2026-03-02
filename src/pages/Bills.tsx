@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, AlertCircle, CheckCircle2, RefreshCw, FolderOpen, Paperclip, ChevronLeft, ChevronRight, FastForward, PartyPopper, X, FileText, AlertTriangle } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
-import { mockBills } from "@/data/mockData";
 import { Bill, BillAttachment } from "@/types/barbershop";
 import { Checkbox } from "@/components/ui/checkbox";
+import { billsStore } from "@/data/billsStore";
 
 const statusConfig = {
   pending: { label: "Pendente", className: "bg-warning/10 text-warning-foreground" },
@@ -13,7 +13,7 @@ const statusConfig = {
 };
 
 const Bills = () => {
-  const [bills, setBills] = useState<Bill[]>(mockBills);
+  const bills = useSyncExternalStore(billsStore.subscribe, billsStore.getBills);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ description: "", amount: "", dueDate: "", category: "", isRecurring: false, recurringMonths: 1 });
   const [activeTab, setActiveTab] = useState<"all" | "recurring" | "single">("all");
@@ -60,55 +60,42 @@ const Bills = () => {
           attachments: [],
         });
       }
-      setBills((prev) => [...prev, ...newBills]);
+      billsStore.addBills(newBills);
     } else {
-      setBills((prev) => [
-        ...prev,
-        {
-          id: String(Date.now()),
-          description: form.description,
-          amount: Number(form.amount),
-          dueDate: form.dueDate,
-          category: form.category,
-          status: "pending",
-          isRecurring: false,
-          attachments: [],
-        },
-      ]);
+      billsStore.addBill({
+        id: String(Date.now()),
+        description: form.description,
+        amount: Number(form.amount),
+        dueDate: form.dueDate,
+        category: form.category,
+        status: "pending",
+        isRecurring: false,
+        attachments: [],
+      });
     }
     setShowForm(false);
     setForm({ description: "", amount: "", dueDate: "", category: "", isRecurring: false, recurringMonths: 1 });
   };
 
   const markPaid = (id: string) => {
-    setBills((prev) => {
-      const updated = prev.map((b) => (b.id === id ? { ...b, status: "paid" as const } : b));
-      const bill = updated.find((b) => b.id === id);
-      if (bill?.isRecurring && bill.recurringGroupId) {
-        const group = updated.filter((b) => b.recurringGroupId === bill.recurringGroupId);
-        const allPaid = group.every((b) => b.status === "paid");
-        if (allPaid) {
-          setCelebrateGroup(bill.recurringGroupId);
-        }
+    billsStore.markPaid(id);
+    const updatedBills = billsStore.getBills();
+    const bill = updatedBills.find((b) => b.id === id);
+    if (bill?.isRecurring && bill.recurringGroupId) {
+      const group = updatedBills.filter((b) => b.recurringGroupId === bill.recurringGroupId);
+      if (group.every((b) => b.status === "paid")) {
+        setCelebrateGroup(bill.recurringGroupId);
       }
-      return updated;
-    });
+    }
   };
 
   const anticipatePayments = (groupId: string) => {
-    setBills((prev) => {
-      const updated = prev.map((b) => {
-        if (b.recurringGroupId === groupId && b.status !== "paid") {
-          return { ...b, status: "paid" as const };
-        }
-        return b;
-      });
-      const group = updated.filter((b) => b.recurringGroupId === groupId);
-      if (group.every((b) => b.status === "paid")) {
-        setCelebrateGroup(groupId);
-      }
-      return updated;
-    });
+    billsStore.anticipateGroup(groupId);
+    const updatedBills = billsStore.getBills();
+    const group = updatedBills.filter((b) => b.recurringGroupId === groupId);
+    if (group.every((b) => b.status === "paid")) {
+      setCelebrateGroup(groupId);
+    }
   };
 
   const getNextUnpaidCount = (groupId: string) => {
@@ -123,22 +110,12 @@ const Bills = () => {
       url: "#",
       date: docMonth,
     };
-    setBills((prev) =>
-      prev.map((b) =>
-        b.id === billId ? { ...b, attachments: [...(b.attachments || []), attachment] } : b
-      )
-    );
+    billsStore.addAttachment(billId, attachment);
     setAttachName("");
   };
 
   const removeAttachment = (billId: string, attachId: string) => {
-    setBills((prev) =>
-      prev.map((b) =>
-        b.id === billId
-          ? { ...b, attachments: (b.attachments || []).filter((a) => a.id !== attachId) }
-          : b
-      )
-    );
+    billsStore.removeAttachment(billId, attachId);
   };
 
   const changeDocMonth = (dir: number) => {
@@ -155,7 +132,6 @@ const Bills = () => {
   const currentDocBill = bills.find((b) => b.id === showDocFolder);
   const currentMonthAttachments = (currentDocBill?.attachments || []).filter((a) => a.date === docMonth);
 
-  // Recurring groups for anticipate UI
   const recurringGroups = useMemo(() => {
     const groups: Record<string, Bill[]> = {};
     bills.forEach((b) => {
