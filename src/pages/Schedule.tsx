@@ -213,7 +213,7 @@ const Schedule = () => {
               <ClientSearch value={form.clientName} onChange={(name) => setForm({ ...form, clientName: name })} />
               <select value={form.barberId} onChange={(e) => setForm({ ...form, barberId: e.target.value })} className="organic-input">
                 <option value="">Selecione o Barbeiro</option>
-                {barbersList.map((b) => (
+                {barbersList.filter((b) => b.active !== false).map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
               </select>
