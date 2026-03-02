@@ -5,10 +5,13 @@ import MotionContainer from "@/components/MotionContainer";
 import { Bill, BillAttachment } from "@/types/barbershop";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { ptBR } from "date-fns/locale";
 import { billsStore } from "@/data/billsStore";
+
+const MONTH_NAMES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
 
 const statusConfig = {
   pending: { label: "Pendente", className: "bg-warning/10 text-warning-foreground" },
@@ -30,6 +33,7 @@ const Bills = () => {
   const [celebrateGroup, setCelebrateGroup] = useState<string | null>(null);
   const [confirmAnticipate, setConfirmAnticipate] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(() => new Date());
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
 
   const selectedMonthStr = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
 
@@ -383,15 +387,47 @@ const Bills = () => {
               )}
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="center">
-            <Calendar
-              mode="single"
-              selected={selectedMonth}
-              onSelect={(date) => date && setSelectedMonth(new Date(date.getFullYear(), date.getMonth(), 1))}
-              locale={ptBR}
-              initialFocus
-              className={cn("p-3 pointer-events-auto")}
-            />
+          <PopoverContent className="w-64 p-4 pointer-events-auto" align="center">
+            <div className="flex items-center justify-between mb-3">
+              <button
+                onClick={() => setPickerYear((y) => y - 1)}
+                className="p-1 rounded hover:bg-secondary transition-colors"
+              >
+                <ChevronLeft size={16} className="text-muted-foreground" />
+              </button>
+              <span className="text-sm font-medium">{pickerYear}</span>
+              <button
+                onClick={() => setPickerYear((y) => y + 1)}
+                className="p-1 rounded hover:bg-secondary transition-colors"
+              >
+                <ChevronRight size={16} className="text-muted-foreground" />
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {MONTH_NAMES.map((name, i) => {
+                const isSelected = selectedMonth.getFullYear() === pickerYear && selectedMonth.getMonth() === i;
+                const now = new Date();
+                const isCurrent = now.getFullYear() === pickerYear && now.getMonth() === i;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setSelectedMonth(new Date(pickerYear, i, 1));
+                    }}
+                    className={cn(
+                      "text-xs py-2 px-1 rounded-lg transition-all font-medium",
+                      isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : isCurrent
+                          ? "bg-primary/10 text-primary hover:bg-primary/20"
+                          : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {name.substring(0, 3)}
+                  </button>
+                );
+              })}
+            </div>
           </PopoverContent>
         </Popover>
         <motion.button
