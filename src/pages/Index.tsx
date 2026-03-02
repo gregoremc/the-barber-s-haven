@@ -44,6 +44,7 @@ const Dashboard = () => {
           trend="+12% vs mês anterior"
           trendUp
           delay={0}
+          hideable
         />
         <StatCard
           label="Agendamentos Hoje"
@@ -56,6 +57,7 @@ const Dashboard = () => {
           value={`R$ ${totalProductsValue.toLocaleString("pt-BR")}`}
           icon={Package}
           delay={0.1}
+          hideable
         />
         <StatCard
           label="Contas Pendentes"
@@ -63,6 +65,7 @@ const Dashboard = () => {
           icon={TrendingUp}
           trend="3 contas em aberto"
           delay={0.15}
+          hideable
         />
       </div>
 
