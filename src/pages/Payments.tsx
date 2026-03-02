@@ -1,9 +1,32 @@
 import { useSyncExternalStore, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Users, CheckCircle2 } from "lucide-react";
+import { Plus, Users, CheckCircle2, AlertTriangle } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { mockBarbers } from "@/data/mockData";
 import { paymentsStore } from "@/data/paymentsStore";
+
+const getPaymentAlerts = () => {
+  const today = new Date();
+  const currentDay = today.getDate();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  return mockBarbers
+    .filter((b) => b.paymentDay)
+    .map((barber) => {
+      const payDay = barber.paymentDay!;
+      // Calculate next payment date
+      let nextPayment = new Date(currentYear, currentMonth, payDay);
+      if (nextPayment < today) {
+        nextPayment = new Date(currentYear, currentMonth + 1, payDay);
+      }
+      const diffTime = nextPayment.getTime() - today.getTime();
+      const daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return { barber, daysUntil, nextPayment };
+    })
+    .filter((a) => a.daysUntil <= 7 && a.daysUntil >= 0)
+    .sort((a, b) => a.daysUntil - b.daysUntil);
+};
 
 const Payments = () => {
   const payments = useSyncExternalStore(paymentsStore.subscribe, paymentsStore.getPayments);
@@ -12,6 +35,7 @@ const Payments = () => {
 
   const totalPaid = payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
   const totalPending = payments.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0);
+  const alerts = getPaymentAlerts();
 
   const handleSave = () => {
     if (!form.barberId || !form.amount) return;
@@ -60,6 +84,40 @@ const Payments = () => {
           <p className="stat-value mt-1">{mockBarbers.length}</p>
         </MotionContainer>
       </div>
+
+      {/* Payment day alerts */}
+      {alerts.length > 0 && (
+        <MotionContainer delay={0.15}>
+          <div className="space-y-2">
+            {alerts.map((alert) => (
+              <div
+                key={alert.barber.id}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
+                  alert.daysUntil === 0
+                    ? "bg-destructive/10 border-destructive/30"
+                    : alert.daysUntil <= 3
+                    ? "bg-warning/10 border-warning/30"
+                    : "bg-accent/10 border-accent/30"
+                }`}
+              >
+                <AlertTriangle size={16} className={
+                  alert.daysUntil === 0 ? "text-destructive" : alert.daysUntil <= 3 ? "text-warning" : "text-accent"
+                } />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {alert.daysUntil === 0
+                      ? `Hoje é dia de pagamento de ${alert.barber.name}!`
+                      : `Pagamento de ${alert.barber.name} em ${alert.daysUntil} dia${alert.daysUntil > 1 ? "s" : ""}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Dia {alert.barber.paymentDay} · {alert.nextPayment.toLocaleDateString("pt-BR")}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </MotionContainer>
+      )}
 
       <AnimatePresence mode="wait">
         {showForm && (
