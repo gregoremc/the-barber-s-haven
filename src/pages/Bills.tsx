@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, AlertCircle, CheckCircle2, RefreshCw, FolderOpen, Paperclip, ChevronLeft, ChevronRight, FastForward, PartyPopper, X, FileText } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, RefreshCw, FolderOpen, Paperclip, ChevronLeft, ChevronRight, FastForward, PartyPopper, X, FileText, AlertTriangle } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { mockBills } from "@/data/mockData";
 import { Bill, BillAttachment } from "@/types/barbershop";
@@ -24,6 +24,7 @@ const Bills = () => {
   });
   const [attachName, setAttachName] = useState("");
   const [celebrateGroup, setCelebrateGroup] = useState<string | null>(null);
+  const [confirmAnticipate, setConfirmAnticipate] = useState<string | null>(null);
 
   const totalPending = bills.filter((b) => b.status !== "paid").reduce((a, b) => a + b.amount, 0);
   const totalPaid = bills.filter((b) => b.status === "paid").reduce((a, b) => a + b.amount, 0);
@@ -202,6 +203,47 @@ const Bills = () => {
               <button onClick={() => setCelebrateGroup(null)} className="organic-btn-primary">
                 Fechar
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Confirm anticipate modal */}
+      <AnimatePresence>
+        {confirmAnticipate && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm"
+            onClick={() => setConfirmAnticipate(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="organic-card !p-6 max-w-sm w-full mx-4 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-accent/10">
+                  <AlertTriangle size={20} className="text-accent" />
+                </div>
+                <h3 className="section-title">Confirmar Antecipação</h3>
+              </div>
+              <p className="text-sm text-muted-foreground font-light">
+                Tem certeza que deseja quitar todas as parcelas pendentes de uma vez? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setConfirmAnticipate(null)} className="organic-btn-secondary">Cancelar</button>
+                <button
+                  onClick={() => { anticipatePayments(confirmAnticipate); setConfirmAnticipate(null); }}
+                  className="organic-btn-primary"
+                >
+                  Confirmar
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -433,7 +475,7 @@ const Bills = () => {
                       <motion.button
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        onClick={() => anticipatePayments(groupId)}
+                        onClick={() => setConfirmAnticipate(groupId)}
                         className="text-xs text-accent flex items-center gap-1 font-medium"
                       >
                         <FastForward size={14} /> Quitar todas
