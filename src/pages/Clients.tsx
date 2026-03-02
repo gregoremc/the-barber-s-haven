@@ -1,9 +1,11 @@
-import { useState, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import { clientsStore, Client } from "@/data/clientsStore";
+import { trashStore } from "@/data/trashStore";
+import { registerRestoreHandler } from "@/pages/Trash";
 
 const Clients = () => {
   const clients = useSyncExternalStore(clientsStore.subscribe, clientsStore.getClients);
@@ -12,6 +14,12 @@ const Clients = () => {
   const [editClient, setEditClient] = useState<Client | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
+
+  useEffect(() => {
+    registerRestoreHandler("client", (item) => {
+      clientsStore.addClient(item.data as Client);
+    });
+  }, []);
 
   const filtered = clients.filter(
     (c) =>
@@ -44,6 +52,7 @@ const Clients = () => {
 
   const confirmDelete = () => {
     if (deleteTarget) {
+      trashStore.addItem({ type: "client", typeLabel: "Cliente", name: deleteTarget.name, data: deleteTarget });
       clientsStore.deleteClient(deleteTarget.id);
       setDeleteTarget(null);
     }

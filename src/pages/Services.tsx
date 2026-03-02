@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Scissors } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import { mockServices } from "@/data/mockData";
 import { Service } from "@/types/barbershop";
+import { trashStore } from "@/data/trashStore";
+import { registerRestoreHandler } from "@/pages/Trash";
 
 const Services = () => {
   const [services, setServices] = useState<Service[]>(mockServices);
@@ -12,6 +14,12 @@ const Services = () => {
   const [editService, setEditService] = useState<Service | null>(null);
   const [form, setForm] = useState({ name: "", costPrice: "", price: "", duration: "", description: "" });
   const [deleteTarget, setDeleteTarget] = useState<Service | null>(null);
+
+  useEffect(() => {
+    registerRestoreHandler("service", (item) => {
+      setServices((prev) => [...prev, item.data as Service]);
+    });
+  }, []);
 
   const totalRevenue = services.reduce((a, s) => a + s.price, 0);
 
@@ -48,6 +56,7 @@ const Services = () => {
 
   const confirmDelete = () => {
     if (deleteTarget) {
+      trashStore.addItem({ type: "service", typeLabel: "Serviço", name: deleteTarget.name, data: deleteTarget });
       setServices((prev) => prev.filter((s) => s.id !== deleteTarget.id));
       setDeleteTarget(null);
     }
