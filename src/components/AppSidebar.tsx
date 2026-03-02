@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -8,6 +9,8 @@ import {
   Wallet,
   FileText,
   Calculator,
+  Moon,
+  Sun,
 } from "lucide-react";
 
 const navItems = [
@@ -22,6 +25,15 @@ const navItems = [
 
 const AppSidebar = () => {
   const location = useLocation();
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  useEffect(() => {
+    if (dark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [dark]);
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-card border-r border-border/50 flex flex-col z-50">
@@ -57,7 +69,17 @@ const AppSidebar = () => {
         })}
       </nav>
 
-      <div className="p-6">
+      <div className="p-6 space-y-3">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          onClick={() => setDark(!dark)}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+        >
+          {dark ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
+          <span>{dark ? "Modo Claro" : "Modo Escuro"}</span>
+        </motion.button>
         <div className="organic-card !p-4">
           <p className="text-xs text-muted-foreground font-light">Hoje</p>
           <p className="text-sm font-medium mt-1">
