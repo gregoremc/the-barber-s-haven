@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useSyncExternalStore, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Users, CheckCircle2 } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
-import { mockBarberPayments, mockBarbers } from "@/data/mockData";
-import { BarberPayment } from "@/types/barbershop";
+import { mockBarbers } from "@/data/mockData";
+import { paymentsStore } from "@/data/paymentsStore";
 
 const Payments = () => {
-  const [payments, setPayments] = useState<BarberPayment[]>(mockBarberPayments);
+  const payments = useSyncExternalStore(paymentsStore.subscribe, paymentsStore.getPayments);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ barberId: "", amount: "", date: "", description: "" });
 
@@ -15,16 +15,16 @@ const Payments = () => {
 
   const handleSave = () => {
     if (!form.barberId || !form.amount) return;
-    setPayments((prev) => [
-      ...prev,
-      { id: String(Date.now()), barberId: form.barberId, amount: Number(form.amount), date: form.date, description: form.description, status: "pending" },
-    ]);
+    paymentsStore.addPayment({
+      id: String(Date.now()),
+      barberId: form.barberId,
+      amount: Number(form.amount),
+      date: form.date,
+      description: form.description,
+      status: "pending",
+    });
     setShowForm(false);
     setForm({ barberId: "", amount: "", date: "", description: "" });
-  };
-
-  const markPaid = (id: string) => {
-    setPayments((prev) => prev.map((p) => (p.id === id ? { ...p, status: "paid" as const } : p)));
   };
 
   return (
@@ -111,16 +111,16 @@ const Payments = () => {
                     <div>
                       <p className="text-sm font-medium">{payment.description}</p>
                       <p className="text-xs text-muted-foreground font-light">
-                        {new Date(payment.date + "T12:00:00").toLocaleDateString("pt-BR")}
+                        {payment.date ? new Date(payment.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium">R$ {payment.amount.toLocaleString("pt-BR")}</span>
+                      <span className="text-sm font-medium">R$ {payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                       {payment.status === "pending" ? (
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => markPaid(payment.id)}
+                          onClick={() => paymentsStore.markPaid(payment.id)}
                           className="organic-btn-secondary !py-1.5 !px-4 text-xs"
                         >
                           Marcar Pago
