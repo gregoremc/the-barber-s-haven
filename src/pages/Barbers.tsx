@@ -1,12 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit2, Trash2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Plus, Edit2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
-import ConfirmDelete from "@/components/ConfirmDelete";
 import { mockBarbers, mockAppointments, mockServices, mockProducts } from "@/data/mockData";
 import { Barber, BarberAttachment } from "@/types/barbershop";
-import { trashStore } from "@/data/trashStore";
-import { registerRestoreHandler } from "@/pages/Trash";
 
 const Barbers = () => {
   const [barbers, setBarbers] = useState<Barber[]>(mockBarbers);
@@ -15,13 +12,8 @@ const Barbers = () => {
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", cpfCnpj: "", address: "", phone: "", commission: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Barber | null>(null);
 
-  useEffect(() => {
-    registerRestoreHandler("barber", (item) => {
-      setBarbers((prev) => [...prev, item.data as Barber]);
-    });
-  }, []);
+
 
   const resetForm = () => {
     setForm({ name: "", cpfCnpj: "", address: "", phone: "", commission: "" });
@@ -62,14 +54,7 @@ const Barbers = () => {
     setShowForm(true);
   };
 
-  const confirmDelete = () => {
-    if (deleteTarget) {
-      trashStore.addItem({ type: "barber", typeLabel: "Barbeiro", name: deleteTarget.name, data: deleteTarget });
-      setBarbers((prev) => prev.filter((b) => b.id !== deleteTarget.id));
-      if (selectedBarberId === deleteTarget.id) setSelectedBarberId(null);
-      setDeleteTarget(null);
-    }
-  };
+
 
   const handleFileAttach = (barberId: string, files: FileList | null) => {
     if (!files) return;
@@ -174,12 +159,8 @@ const Barbers = () => {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-      <ConfirmDelete
-        open={!!deleteTarget}
-        itemName={deleteTarget?.name}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteTarget(null)}
-      />
+
+
 
         <div>
           <h1 className="page-title">Barbeiros</h1>
@@ -282,14 +263,8 @@ const Barbers = () => {
                     >
                       <Edit2 size={14} className="text-muted-foreground" />
                     </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(barber); }}
-                      className="p-1.5 rounded-full hover:bg-destructive/10 transition-colors"
-                    >
-                      <Trash2 size={14} className="text-destructive" />
-                    </motion.button>
+
+
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
