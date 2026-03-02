@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, RefreshCw, FolderOpen, Paperclip, ChevronLeft, ChevronRight, FastForward, PartyPopper, X, FileText } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { mockBills } from "@/data/mockData";
-import { Bill } from "@/types/barbershop";
+import { Bill, BillAttachment } from "@/types/barbershop";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const statusConfig = {
   pending: { label: "Pendente", className: "bg-warning/10 text-warning-foreground" },
@@ -14,28 +15,282 @@ const statusConfig = {
 const Bills = () => {
   const [bills, setBills] = useState<Bill[]>(mockBills);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ description: "", amount: "", dueDate: "", category: "" });
+  const [form, setForm] = useState({ description: "", amount: "", dueDate: "", category: "", isRecurring: false, recurringMonths: 1 });
+  const [activeTab, setActiveTab] = useState<"all" | "recurring" | "single">("all");
+  const [showDocFolder, setShowDocFolder] = useState<string | null>(null);
+  const [docMonth, setDocMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [attachName, setAttachName] = useState("");
+  const [celebrateGroup, setCelebrateGroup] = useState<string | null>(null);
 
   const totalPending = bills.filter((b) => b.status !== "paid").reduce((a, b) => a + b.amount, 0);
   const totalPaid = bills.filter((b) => b.status === "paid").reduce((a, b) => a + b.amount, 0);
   const overdueCount = bills.filter((b) => b.status === "overdue").length;
 
+  const filteredBills = useMemo(() => {
+    if (activeTab === "recurring") return bills.filter((b) => b.isRecurring);
+    if (activeTab === "single") return bills.filter((b) => !b.isRecurring);
+    return bills;
+  }, [bills, activeTab]);
+
   const handleSave = () => {
     if (!form.description || !form.amount) return;
-    setBills((prev) => [
-      ...prev,
-      { id: String(Date.now()), description: form.description, amount: Number(form.amount), dueDate: form.dueDate, category: form.category, status: "pending" },
-    ]);
+    if (form.isRecurring && form.recurringMonths > 1) {
+      const groupId = String(Date.now());
+      const baseDate = form.dueDate ? new Date(form.dueDate + "T12:00:00") : new Date();
+      const newBills: Bill[] = [];
+      for (let i = 0; i < form.recurringMonths; i++) {
+        const d = new Date(baseDate);
+        d.setMonth(d.getMonth() + i);
+        const dueDate = d.toISOString().split("T")[0];
+        newBills.push({
+          id: `${groupId}-${i}`,
+          description: `${form.description} (${i + 1}/${form.recurringMonths})`,
+          amount: Number(form.amount),
+          dueDate,
+          category: form.category,
+          status: "pending",
+          isRecurring: true,
+          recurringMonths: form.recurringMonths,
+          recurringGroupId: groupId,
+          installmentNumber: i + 1,
+          attachments: [],
+        });
+      }
+      setBills((prev) => [...prev, ...newBills]);
+    } else {
+      setBills((prev) => [
+        ...prev,
+        {
+          id: String(Date.now()),
+          description: form.description,
+          amount: Number(form.amount),
+          dueDate: form.dueDate,
+          category: form.category,
+          status: "pending",
+          isRecurring: false,
+          attachments: [],
+        },
+      ]);
+    }
     setShowForm(false);
-    setForm({ description: "", amount: "", dueDate: "", category: "" });
+    setForm({ description: "", amount: "", dueDate: "", category: "", isRecurring: false, recurringMonths: 1 });
   };
 
   const markPaid = (id: string) => {
-    setBills((prev) => prev.map((b) => (b.id === id ? { ...b, status: "paid" as const } : b)));
+    setBills((prev) => {
+      const updated = prev.map((b) => (b.id === id ? { ...b, status: "paid" as const } : b));
+      const bill = updated.find((b) => b.id === id);
+      if (bill?.isRecurring && bill.recurringGroupId) {
+        const group = updated.filter((b) => b.recurringGroupId === bill.recurringGroupId);
+        const allPaid = group.every((b) => b.status === "paid");
+        if (allPaid) {
+          setCelebrateGroup(bill.recurringGroupId);
+        }
+      }
+      return updated;
+    });
   };
+
+  const anticipatePayments = (groupId: string) => {
+    setBills((prev) => {
+      const updated = prev.map((b) => {
+        if (b.recurringGroupId === groupId && b.status !== "paid") {
+          return { ...b, status: "paid" as const };
+        }
+        return b;
+      });
+      const group = updated.filter((b) => b.recurringGroupId === groupId);
+      if (group.every((b) => b.status === "paid")) {
+        setCelebrateGroup(groupId);
+      }
+      return updated;
+    });
+  };
+
+  const getNextUnpaidCount = (groupId: string) => {
+    return bills.filter((b) => b.recurringGroupId === groupId && b.status !== "paid").length;
+  };
+
+  const handleAttach = (billId: string) => {
+    if (!attachName.trim()) return;
+    const attachment: BillAttachment = {
+      id: String(Date.now()),
+      name: attachName.trim(),
+      url: "#",
+      date: docMonth,
+    };
+    setBills((prev) =>
+      prev.map((b) =>
+        b.id === billId ? { ...b, attachments: [...(b.attachments || []), attachment] } : b
+      )
+    );
+    setAttachName("");
+  };
+
+  const removeAttachment = (billId: string, attachId: string) => {
+    setBills((prev) =>
+      prev.map((b) =>
+        b.id === billId
+          ? { ...b, attachments: (b.attachments || []).filter((a) => a.id !== attachId) }
+          : b
+      )
+    );
+  };
+
+  const changeDocMonth = (dir: number) => {
+    const [y, m] = docMonth.split("-").map(Number);
+    const d = new Date(y, m - 1 + dir, 1);
+    setDocMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  };
+
+  const docMonthLabel = () => {
+    const [y, m] = docMonth.split("-").map(Number);
+    return new Date(y, m - 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  };
+
+  const currentDocBill = bills.find((b) => b.id === showDocFolder);
+  const currentMonthAttachments = (currentDocBill?.attachments || []).filter((a) => a.date === docMonth);
+
+  // Recurring groups for anticipate UI
+  const recurringGroups = useMemo(() => {
+    const groups: Record<string, Bill[]> = {};
+    bills.forEach((b) => {
+      if (b.recurringGroupId) {
+        if (!groups[b.recurringGroupId]) groups[b.recurringGroupId] = [];
+        groups[b.recurringGroupId].push(b);
+      }
+    });
+    return groups;
+  }, [bills]);
+
+  const tabs = [
+    { key: "all" as const, label: "Todas" },
+    { key: "recurring" as const, label: "Recorrentes" },
+    { key: "single" as const, label: "Avulsas" },
+  ];
 
   return (
     <div className="space-y-8">
+      {/* Celebration modal */}
+      <AnimatePresence>
+        {celebrateGroup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 backdrop-blur-sm"
+            onClick={() => setCelebrateGroup(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="organic-card max-w-md text-center space-y-4 p-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-center">
+                <PartyPopper size={48} className="text-success" />
+              </div>
+              <h2 className="section-title text-success">Parabéns! 🎉</h2>
+              <p className="text-muted-foreground text-sm">
+                Você quitou todas as contas referentes a esse item. Todas as parcelas foram pagas com sucesso!
+              </p>
+              <button onClick={() => setCelebrateGroup(null)} className="organic-btn-primary">
+                Fechar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Document folder modal */}
+      <AnimatePresence>
+        {showDocFolder && currentDocBill && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 backdrop-blur-sm"
+            onClick={() => setShowDocFolder(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="organic-card w-full max-w-lg space-y-5 p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="section-title flex items-center gap-2">
+                  <FolderOpen size={18} className="text-accent" />
+                  Documentos — {currentDocBill.description}
+                </h3>
+                <button onClick={() => setShowDocFolder(null)} className="text-muted-foreground hover:text-foreground">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Month nav */}
+              <div className="flex items-center justify-between">
+                <button onClick={() => changeDocMonth(-1)} className="organic-btn-ghost p-2">
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-sm font-medium capitalize">{docMonthLabel()}</span>
+                <button onClick={() => changeDocMonth(1)} className="organic-btn-ghost p-2">
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+
+              {/* Attachments */}
+              <div className="space-y-2 min-h-[80px]">
+                {currentMonthAttachments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nenhum documento neste mês.</p>
+                ) : (
+                  currentMonthAttachments.map((att) => (
+                    <div key={att.id} className="flex items-center justify-between bg-secondary/50 rounded-xl px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <FileText size={14} className="text-accent" />
+                        <span className="text-sm font-medium">{att.name}</span>
+                      </div>
+                      <button
+                        onClick={() => removeAttachment(currentDocBill.id, att.id)}
+                        className="text-destructive hover:text-destructive/80"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Add attachment */}
+              <div className="flex gap-2">
+                <input
+                  placeholder="Nome do arquivo"
+                  value={attachName}
+                  onChange={(e) => setAttachName(e.target.value)}
+                  className="organic-input flex-1"
+                  onKeyDown={(e) => e.key === "Enter" && handleAttach(currentDocBill.id)}
+                />
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleAttach(currentDocBill.id)}
+                  className="organic-btn-primary flex items-center gap-1"
+                >
+                  <Paperclip size={14} /> Anexar
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Contas a Pagar</h1>
@@ -53,6 +308,7 @@ const Bills = () => {
         </motion.button>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <MotionContainer className="organic-card">
           <p className="stat-label">Total Pendente</p>
@@ -71,6 +327,7 @@ const Bills = () => {
         </MotionContainer>
       </div>
 
+      {/* Form */}
       <AnimatePresence mode="wait">
         {showForm && (
           <motion.div
@@ -87,6 +344,47 @@ const Bills = () => {
               <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className="organic-input" />
               <input placeholder="Categoria" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="organic-input" />
             </div>
+
+            {/* Recurring toggle */}
+            <div className="flex items-center gap-3 pt-2">
+              <Checkbox
+                id="recurring"
+                checked={form.isRecurring}
+                onCheckedChange={(checked) => setForm({ ...form, isRecurring: !!checked, recurringMonths: checked ? 2 : 1 })}
+              />
+              <label htmlFor="recurring" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                <RefreshCw size={14} className="text-accent" />
+                Conta recorrente
+              </label>
+            </div>
+
+            <AnimatePresence>
+              {form.isRecurring && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm text-muted-foreground">Período (meses):</label>
+                    <select
+                      value={form.recurringMonths}
+                      onChange={(e) => setForm({ ...form, recurringMonths: Number(e.target.value) })}
+                      className="organic-input w-24"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                        <option key={m} value={m}>{m}x</option>
+                      ))}
+                    </select>
+                    <span className="text-xs text-muted-foreground">
+                      Total: R$ {((Number(form.amount) || 0) * form.recurringMonths).toLocaleString("pt-BR")}
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="flex gap-3">
               <button onClick={handleSave} className="organic-btn-primary">Salvar</button>
               <button onClick={() => setShowForm(false)} className="organic-btn-secondary">Cancelar</button>
@@ -95,21 +393,75 @@ const Bills = () => {
         )}
       </AnimatePresence>
 
+      {/* Tabs */}
+      <div className="flex gap-2">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={`text-sm px-4 py-2 rounded-full transition-all ${
+              activeTab === t.key
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-secondary-foreground hover:bg-muted"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Anticipate recurring section */}
+      {activeTab !== "single" && Object.entries(recurringGroups).some(([, g]) => g.some((b) => b.status !== "paid")) && (
+        <MotionContainer delay={0.1}>
+          <div className="organic-card space-y-3">
+            <h3 className="section-title flex items-center gap-2">
+              <FastForward size={16} className="text-accent" />
+              Antecipar Recorrências
+            </h3>
+            <div className="space-y-2">
+              {Object.entries(recurringGroups)
+                .filter(([, g]) => g.some((b) => b.status !== "paid"))
+                .map(([groupId, group]) => {
+                  const unpaid = getNextUnpaidCount(groupId);
+                  const baseName = group[0].description.replace(/\s*\(\d+\/\d+\)/, "");
+                  return (
+                    <div key={groupId} className="flex items-center justify-between bg-secondary/40 rounded-xl px-4 py-3">
+                      <div>
+                        <span className="text-sm font-medium">{baseName}</span>
+                        <span className="text-xs text-muted-foreground ml-2">({unpaid} parcela{unpaid > 1 ? "s" : ""} restante{unpaid > 1 ? "s" : ""})</span>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => anticipatePayments(groupId)}
+                        className="text-xs text-accent flex items-center gap-1 font-medium"
+                      >
+                        <FastForward size={14} /> Quitar todas
+                      </motion.button>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </MotionContainer>
+      )}
+
+      {/* Table */}
       <MotionContainer delay={0.15}>
         <div className="organic-card overflow-hidden !p-0">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border/50">
                 <th className="text-left p-4 text-xs text-muted-foreground font-medium">Descrição</th>
-                <th className="text-left p-4 text-xs text-muted-foreground font-medium">Categoria</th>
+                <th className="text-left p-4 text-xs text-muted-foreground font-medium hidden md:table-cell">Categoria</th>
                 <th className="text-right p-4 text-xs text-muted-foreground font-medium">Valor</th>
-                <th className="text-left p-4 text-xs text-muted-foreground font-medium">Vencimento</th>
+                <th className="text-left p-4 text-xs text-muted-foreground font-medium hidden md:table-cell">Vencimento</th>
                 <th className="text-left p-4 text-xs text-muted-foreground font-medium">Status</th>
                 <th className="text-right p-4 text-xs text-muted-foreground font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {bills.map((bill) => {
+              {filteredBills.map((bill) => {
                 const status = statusConfig[bill.status];
                 return (
                   <motion.tr
@@ -118,11 +470,16 @@ const Bills = () => {
                     animate={{ opacity: 1 }}
                     className="border-b border-border/30 last:border-0 hover:bg-secondary/30 transition-colors"
                   >
-                    <td className="p-4 text-sm font-medium">{bill.description}</td>
-                    <td className="p-4 text-sm text-muted-foreground">{bill.category}</td>
+                    <td className="p-4 text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        {bill.isRecurring && <RefreshCw size={12} className="text-accent" />}
+                        {bill.description}
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground hidden md:table-cell">{bill.category}</td>
                     <td className="p-4 text-sm text-right font-medium">R$ {bill.amount.toLocaleString("pt-BR")}</td>
-                    <td className="p-4 text-sm text-muted-foreground">
-                      {new Date(bill.dueDate + "T12:00:00").toLocaleDateString("pt-BR")}
+                    <td className="p-4 text-sm text-muted-foreground hidden md:table-cell">
+                      {bill.dueDate ? new Date(bill.dueDate + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
                     </td>
                     <td className="p-4">
                       <span className={`text-xs px-3 py-1 rounded-full font-medium ${status.className}`}>
@@ -130,20 +487,38 @@ const Bills = () => {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      {bill.status !== "paid" && (
+                      <div className="flex items-center gap-2 justify-end">
                         <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => markPaid(bill.id)}
-                          className="text-xs text-success flex items-center gap-1 ml-auto"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setShowDocFolder(bill.id)}
+                          className="text-muted-foreground hover:text-accent"
+                          title="Documentos"
                         >
-                          <CheckCircle2 size={14} /> Pagar
+                          <FolderOpen size={14} />
                         </motion.button>
-                      )}
+                        {bill.status !== "paid" && (
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => markPaid(bill.id)}
+                            className="text-xs text-success flex items-center gap-1"
+                          >
+                            <CheckCircle2 size={14} /> Pagar
+                          </motion.button>
+                        )}
+                      </div>
                     </td>
                   </motion.tr>
                 );
               })}
+              {filteredBills.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-sm text-muted-foreground">
+                    Nenhuma conta encontrada.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
