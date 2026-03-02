@@ -28,7 +28,8 @@ export interface Appointment {
   id: string;
   barberId: string;
   clientName: string;
-  serviceId: string;
+  serviceId: string; // legacy single
+  serviceIds?: string[]; // multiple services
   date: string;
   time: string;
   status: 'scheduled' | 'completed' | 'cancelled';
