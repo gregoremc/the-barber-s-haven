@@ -2,20 +2,19 @@ import { useSyncExternalStore, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Users, CheckCircle2, AlertTriangle } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
-import { mockBarbers } from "@/data/mockData";
 import { paymentsStore } from "@/data/paymentsStore";
+import { barbersStore } from "@/data/barbersStore";
+import { Barber } from "@/types/barbershop";
 
-const getPaymentAlerts = () => {
+const getPaymentAlerts = (barbersList: Barber[]) => {
   const today = new Date();
-  const currentDay = today.getDate();
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
 
-  return mockBarbers
+  return barbersList
     .filter((b) => b.paymentDay)
     .map((barber) => {
       const payDay = barber.paymentDay!;
-      // Calculate next payment date
       let nextPayment = new Date(currentYear, currentMonth, payDay);
       if (nextPayment < today) {
         nextPayment = new Date(currentYear, currentMonth + 1, payDay);
@@ -30,12 +29,13 @@ const getPaymentAlerts = () => {
 
 const Payments = () => {
   const payments = useSyncExternalStore(paymentsStore.subscribe, paymentsStore.getPayments);
+  const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ barberId: "", amount: "", date: "", description: "" });
 
   const totalPaid = payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
   const totalPending = payments.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0);
-  const alerts = getPaymentAlerts();
+  const alerts = getPaymentAlerts(barbers);
 
   const handleSave = () => {
     if (!form.barberId || !form.amount) return;
@@ -81,7 +81,7 @@ const Payments = () => {
         </MotionContainer>
         <MotionContainer delay={0.1} className="organic-card">
           <p className="stat-label">Barbeiros Ativos</p>
-          <p className="stat-value mt-1">{mockBarbers.length}</p>
+          <p className="stat-value mt-1">{barbers.length}</p>
         </MotionContainer>
       </div>
 
@@ -132,7 +132,7 @@ const Payments = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <select value={form.barberId} onChange={(e) => setForm({ ...form, barberId: e.target.value })} className="organic-input">
                 <option value="">Selecione o Barbeiro</option>
-                {mockBarbers.map((b) => (
+                {barbers.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
               </select>
@@ -148,7 +148,7 @@ const Payments = () => {
         )}
       </AnimatePresence>
 
-      {mockBarbers.map((barber, i) => {
+      {barbers.map((barber, i) => {
         const barberPayments = payments.filter((p) => p.barberId === barber.id);
         if (barberPayments.length === 0) return null;
         return (

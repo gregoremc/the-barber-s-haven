@@ -1,12 +1,13 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Edit2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
-import { mockBarbers, mockAppointments, mockServices, mockProducts } from "@/data/mockData";
+import { mockAppointments, mockServices, mockProducts } from "@/data/mockData";
 import { Barber, BarberAttachment } from "@/types/barbershop";
+import { barbersStore } from "@/data/barbersStore";
 
 const Barbers = () => {
-  const [barbers, setBarbers] = useState<Barber[]>(mockBarbers);
+  const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
@@ -24,27 +25,25 @@ const Barbers = () => {
   const handleSave = () => {
     if (!form.name || !form.phone) return;
     if (editingId) {
-      setBarbers((prev) =>
-        prev.map((b) =>
-          b.id === editingId
-            ? { ...b, name: form.name, cpfCnpj: form.cpfCnpj, address: form.address, phone: form.phone, commission: Number(form.commission) || b.commission, paymentDay: Number(form.paymentDay) || undefined }
-            : b
-        )
-      );
+      barbersStore.updateBarber(editingId, {
+        name: form.name,
+        cpfCnpj: form.cpfCnpj,
+        address: form.address,
+        phone: form.phone,
+        commission: Number(form.commission) || 50,
+        paymentDay: Number(form.paymentDay) || undefined,
+      });
     } else {
-      setBarbers((prev) => [
-        ...prev,
-        {
-          id: String(Date.now()),
-          name: form.name,
-          cpfCnpj: form.cpfCnpj,
-          address: form.address,
-          phone: form.phone,
-          commission: Number(form.commission) || 50,
-          paymentDay: Number(form.paymentDay) || undefined,
-          attachments: [],
-        },
-      ]);
+      barbersStore.addBarber({
+        id: String(Date.now()),
+        name: form.name,
+        cpfCnpj: form.cpfCnpj,
+        address: form.address,
+        phone: form.phone,
+        commission: Number(form.commission) || 50,
+        paymentDay: Number(form.paymentDay) || undefined,
+        attachments: [],
+      });
     }
     resetForm();
   };
@@ -65,23 +64,11 @@ const Barbers = () => {
       url: URL.createObjectURL(file),
       date: new Date().toLocaleDateString("pt-BR"),
     }));
-    setBarbers((prev) =>
-      prev.map((b) =>
-        b.id === barberId
-          ? { ...b, attachments: [...(b.attachments || []), ...newAttachments] }
-          : b
-      )
-    );
+    barbersStore.addAttachment(barberId, newAttachments);
   };
 
   const removeAttachment = (barberId: string, attachmentId: string) => {
-    setBarbers((prev) =>
-      prev.map((b) =>
-        b.id === barberId
-          ? { ...b, attachments: (b.attachments || []).filter((a) => a.id !== attachmentId) }
-          : b
-      )
-    );
+    barbersStore.removeAttachment(barberId, attachmentId);
   };
 
   const selectedBarber = barbers.find((b) => b.id === selectedBarberId);
