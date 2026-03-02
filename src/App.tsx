@@ -10,6 +10,7 @@ import Services from "./pages/Services";
 import Schedule from "./pages/Schedule";
 import Payments from "./pages/Payments";
 import Bills from "./pages/Bills";
+import Clients from "./pages/Clients";
 import CostCalculator from "./pages/CostCalculator";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/bills" element={<Bills />} />
+            <Route path="/clients" element={<Clients />} />
             <Route path="/calculator" element={<CostCalculator />} />
           </Route>
           <Route path="*" element={<NotFound />} />

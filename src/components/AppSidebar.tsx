@@ -9,6 +9,7 @@ import {
   Wallet,
   FileText,
   Calculator,
+  Users,
   Moon,
   Sun,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const navItems = [
   { to: "/schedule", icon: CalendarDays, label: "Agenda" },
   { to: "/payments", icon: Wallet, label: "Pagamentos" },
   { to: "/bills", icon: FileText, label: "Contas" },
+  { to: "/clients", icon: Users, label: "Clientes" },
   { to: "/calculator", icon: Calculator, label: "Calculadora" },
 ];
 
