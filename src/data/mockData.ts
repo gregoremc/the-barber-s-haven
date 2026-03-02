@@ -17,9 +17,9 @@ export const mockServices: Service[] = [
 ];
 
 export const mockBarbers: Barber[] = [
-  { id: "1", name: "Carlos Silva", phone: "(11) 99999-1111", commission: 50 },
-  { id: "2", name: "André Santos", phone: "(11) 99999-2222", commission: 45 },
-  { id: "3", name: "Rafael Lima", phone: "(11) 99999-3333", commission: 50 },
+  { id: "1", name: "Carlos Silva", cpfCnpj: "123.456.789-00", address: "Rua das Flores, 100 - SP", phone: "(11) 99999-1111", commission: 50, attachments: [] },
+  { id: "2", name: "André Santos", cpfCnpj: "987.654.321-00", address: "Av. Paulista, 500 - SP", phone: "(11) 99999-2222", commission: 45, attachments: [] },
+  { id: "3", name: "Rafael Lima", cpfCnpj: "456.789.123-00", address: "Rua Augusta, 200 - SP", phone: "(11) 99999-3333", commission: 50, attachments: [] },
 ];
 
 export const mockAppointments: Appointment[] = [
