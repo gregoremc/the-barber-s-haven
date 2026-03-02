@@ -5,6 +5,7 @@ import MotionContainer from "@/components/MotionContainer";
 import ClientSearch from "@/components/ClientSearch";
 import { mockAppointments, mockBarbers, mockServices } from "@/data/mockData";
 import { Appointment } from "@/types/barbershop";
+import { paymentsStore } from "@/data/paymentsStore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -60,8 +61,29 @@ const Schedule = () => {
     setSelectedServices((prev) => prev.filter((s) => s !== id));
   };
 
+  const generateCommissionPayment = (barberId: string, serviceIds: string[], date: string) => {
+    const barber = mockBarbers.find((b) => b.id === barberId);
+    if (!barber) return;
+    const totalServices = serviceIds.reduce((acc, sid) => {
+      const svc = mockServices.find((s) => s.id === sid);
+      return acc + (svc?.price || 0);
+    }, 0);
+    const commissionAmount = totalServices * (barber.commission / 100);
+    if (commissionAmount <= 0) return;
+    const svcNames = serviceIds.map((sid) => mockServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+    paymentsStore.addPayment({
+      id: String(Date.now()) + Math.random().toString(36).slice(2),
+      barberId,
+      amount: commissionAmount,
+      date,
+      description: `Comissão: ${svcNames}`,
+      status: "pending",
+    });
+  };
+
   const handleSave = () => {
     if (!form.clientName || !form.barberId || selectedServices.length === 0) return;
+    const status = isCompleted ? "completed" : "scheduled";
     setAppointments((prev) => [
       ...prev,
       {
@@ -72,9 +94,12 @@ const Schedule = () => {
         serviceIds: selectedServices,
         date: dateStr,
         time: form.time,
-        status: isCompleted ? "completed" : "scheduled",
+        status,
       },
     ]);
+    if (status === "completed") {
+      generateCommissionPayment(form.barberId, selectedServices, dateStr);
+    }
     setShowForm(false);
     setForm({ barberId: "", clientName: "", time: "" });
     setSelectedServices([]);
@@ -82,6 +107,11 @@ const Schedule = () => {
   };
 
   const updateStatus = (id: string, status: Appointment["status"]) => {
+    const apt = appointments.find((a) => a.id === id);
+    if (apt && status === "completed") {
+      const svcIds = getServiceIds(apt);
+      generateCommissionPayment(apt.barberId, svcIds, apt.date);
+    }
     setAppointments((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status } : a))
     );
