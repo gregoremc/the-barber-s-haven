@@ -23,8 +23,8 @@ const navItems = [
   { to: "/payments", icon: Wallet, label: "Pagamentos" },
   { to: "/bills", icon: FileText, label: "Contas" },
   { to: "/barbers", icon: UserCheck, label: "Barbeiros" },
-  { to: "/calculator", icon: Calculator, label: "Calculadora" },
   { to: "/clients", icon: Users, label: "Clientes" },
+  { to: "/calculator", icon: Calculator, label: "Calculadora" },
 ];
 
 const AppSidebar = () => {
