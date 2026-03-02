@@ -55,6 +55,13 @@ export interface BarberPayment {
   status: 'pending' | 'paid';
 }
 
+export interface BillAttachment {
+  id: string;
+  name: string;
+  url: string;
+  date: string; // YYYY-MM
+}
+
 export interface Bill {
   id: string;
   description: string;
@@ -62,4 +69,9 @@ export interface Bill {
   dueDate: string;
   category: string;
   status: 'pending' | 'paid' | 'overdue';
+  isRecurring?: boolean;
+  recurringMonths?: number; // 1-12
+  recurringGroupId?: string; // links installments together
+  installmentNumber?: number; // which installment (1-based)
+  attachments?: BillAttachment[];
 }
