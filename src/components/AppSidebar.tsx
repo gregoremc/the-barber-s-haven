@@ -173,12 +173,13 @@ const AppSidebar = () => {
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md z-[61] organic-card space-y-5"
+              className="fixed inset-0 z-[61] flex items-center justify-center pointer-events-none"
             >
+              <div className="w-full max-w-md pointer-events-auto organic-card space-y-5 mx-4">
               <div className="flex items-center justify-between">
                 <h3 className="section-title">Configurações da Barbearia</h3>
                 <button onClick={() => setShowSettings(false)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
@@ -235,6 +236,7 @@ const AppSidebar = () => {
               <div className="flex gap-3">
                 <button onClick={handleSaveSettings} className="organic-btn-primary flex-1">Salvar</button>
                 <button onClick={() => setShowSettings(false)} className="organic-btn-secondary flex-1">Cancelar</button>
+              </div>
               </div>
             </motion.div>
           </>
