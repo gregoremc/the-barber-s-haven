@@ -4,6 +4,10 @@ import { Plus, AlertCircle, CheckCircle2, RefreshCw, FolderOpen, Paperclip, Chev
 import MotionContainer from "@/components/MotionContainer";
 import { Bill, BillAttachment } from "@/types/barbershop";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { ptBR } from "date-fns/locale";
 import { billsStore } from "@/data/billsStore";
 
 const statusConfig = {
@@ -365,17 +369,31 @@ const Bills = () => {
         >
           <ChevronLeft size={20} className="text-muted-foreground" />
         </motion.button>
-        <div className="text-center">
-          <p className="text-sm font-medium capitalize">{formatMonthLabel(selectedMonth)}</p>
-          {!isCurrentMonth() && (
-            <button onClick={goToCurrentMonth} className="text-xs text-primary hover:underline mt-0.5">
-              Voltar para mês atual
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="text-center cursor-pointer hover:opacity-80 transition-opacity">
+              <p className="text-sm font-medium capitalize">{formatMonthLabel(selectedMonth)}</p>
+              {!isCurrentMonth() && (
+                <button onClick={(e) => { e.stopPropagation(); goToCurrentMonth(); }} className="text-xs text-primary hover:underline mt-0.5">
+                  Voltar para mês atual
+                </button>
+              )}
+              {isCurrentMonth() && (
+                <p className="text-xs text-muted-foreground mt-0.5">Mês atual</p>
+              )}
             </button>
-          )}
-          {isCurrentMonth() && (
-            <p className="text-xs text-muted-foreground mt-0.5">Mês atual</p>
-          )}
-        </div>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <Calendar
+              mode="single"
+              selected={selectedMonth}
+              onSelect={(date) => date && setSelectedMonth(new Date(date.getFullYear(), date.getMonth(), 1))}
+              locale={ptBR}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
