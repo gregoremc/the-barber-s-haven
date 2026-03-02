@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { ptBR } from "date-fns/locale";
 
 
 const statusConfig = {
@@ -158,6 +159,7 @@ const Schedule = () => {
               mode="single"
               selected={selectedDate}
               onSelect={(date) => date && setSelectedDate(date)}
+              locale={ptBR}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
             />
