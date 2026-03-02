@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Clock, CheckCircle2, XCircle, X, ChevronLeft, ChevronRight, PlusCircle, Trash2 } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ClientSearch from "@/components/ClientSearch";
-import { mockAppointments, mockBarbers, mockServices } from "@/data/mockData";
+import { mockAppointments, mockServices } from "@/data/mockData";
+import { barbersStore } from "@/data/barbersStore";
 import { Appointment } from "@/types/barbershop";
 import { paymentsStore } from "@/data/paymentsStore";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,6 +29,7 @@ const formatDateBR = (date: Date) =>
 const toDateStr = (date: Date) => date.toISOString().split("T")[0];
 
 const Schedule = () => {
+  const barbersList = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ barberId: "", clientName: "", time: "" });
@@ -62,7 +64,7 @@ const Schedule = () => {
   };
 
   const generateCommissionPayment = (barberId: string, serviceIds: string[], date: string) => {
-    const barber = mockBarbers.find((b) => b.id === barberId);
+    const barber = barbersList.find((b) => b.id === barberId);
     if (!barber) return;
     const totalServices = serviceIds.reduce((acc, sid) => {
       const svc = mockServices.find((s) => s.id === sid);
@@ -221,7 +223,7 @@ const Schedule = () => {
               <ClientSearch value={form.clientName} onChange={(name) => setForm({ ...form, clientName: name })} />
               <select value={form.barberId} onChange={(e) => setForm({ ...form, barberId: e.target.value })} className="organic-input">
                 <option value="">Selecione o Barbeiro</option>
-                {mockBarbers.map((b) => (
+                {barbersList.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
               </select>
@@ -288,7 +290,7 @@ const Schedule = () => {
           </MotionContainer>
         ) : (
           dayAppointments.map((apt, i) => {
-            const barber = mockBarbers.find((b) => b.id === apt.barberId);
+            const barber = barbersList.find((b) => b.id === apt.barberId);
             const svcIds = getServiceIds(apt);
             const services = svcIds.map((id) => mockServices.find((s) => s.id === id)).filter(Boolean);
             const status = statusConfig[apt.status];
