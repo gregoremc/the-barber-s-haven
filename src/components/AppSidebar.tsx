@@ -21,8 +21,8 @@ const navItems = [
   { to: "/schedule", icon: CalendarDays, label: "Agenda" },
   { to: "/payments", icon: Wallet, label: "Pagamentos" },
   { to: "/bills", icon: FileText, label: "Contas" },
-  { to: "/clients", icon: Users, label: "Clientes" },
   { to: "/calculator", icon: Calculator, label: "Calculadora" },
+  { to: "/clients", icon: Users, label: "Clientes" },
 ];
 
 const AppSidebar = () => {
