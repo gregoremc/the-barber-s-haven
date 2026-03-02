@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Clock, CheckCircle2, XCircle, X } from "lucide-react";
+import { Plus, Clock, CheckCircle2, XCircle, X, ChevronLeft, ChevronRight, PlusCircle, Trash2 } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { mockAppointments, mockBarbers, mockServices } from "@/data/mockData";
 import { Appointment } from "@/types/barbershop";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const statusConfig = {
   scheduled: { label: "Agendado", className: "bg-accent/10 text-accent" },
@@ -14,17 +15,34 @@ const statusConfig = {
 const getServiceIds = (apt: Appointment): string[] =>
   apt.serviceIds?.length ? apt.serviceIds : apt.serviceId ? [apt.serviceId] : [];
 
+const formatDateBR = (date: Date) =>
+  date.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+
+const toDateStr = (date: Date) => date.toISOString().split("T")[0];
+
 const Schedule = () => {
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ barberId: "", clientName: "", date: "", time: "" });
+  const [form, setForm] = useState({ barberId: "", clientName: "", time: "" });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [editingApt, setEditingApt] = useState<string | null>(null);
 
-  const grouped = appointments.reduce((acc, apt) => {
-    if (!acc[apt.date]) acc[apt.date] = [];
-    acc[apt.date].push(apt);
-    return acc;
-  }, {} as Record<string, Appointment[]>);
+  const dateStr = toDateStr(selectedDate);
+  const dayAppointments = appointments
+    .filter((a) => a.date === dateStr)
+    .sort((a, b) => a.time.localeCompare(b.time));
+
+  const navigateDay = (dir: number) => {
+    setSelectedDate((prev) => {
+      const next = new Date(prev);
+      next.setDate(next.getDate() + dir);
+      return next;
+    });
+  };
+
+  const goToToday = () => setSelectedDate(new Date());
 
   const addService = (id: string) => {
     if (id && !selectedServices.includes(id)) {
@@ -42,15 +60,19 @@ const Schedule = () => {
       ...prev,
       {
         id: String(Date.now()),
-        ...form,
+        barberId: form.barberId,
+        clientName: form.clientName,
         serviceId: selectedServices[0],
         serviceIds: selectedServices,
-        status: "scheduled",
+        date: dateStr,
+        time: form.time,
+        status: isCompleted ? "completed" : "scheduled",
       },
     ]);
     setShowForm(false);
-    setForm({ barberId: "", clientName: "", date: "", time: "" });
+    setForm({ barberId: "", clientName: "", time: "" });
     setSelectedServices([]);
+    setIsCompleted(false);
   };
 
   const updateStatus = (id: string, status: Appointment["status"]) => {
@@ -58,6 +80,31 @@ const Schedule = () => {
       prev.map((a) => (a.id === id ? { ...a, status } : a))
     );
   };
+
+  const addServiceToApt = (aptId: string, serviceId: string) => {
+    setAppointments((prev) =>
+      prev.map((a) => {
+        if (a.id !== aptId) return a;
+        const ids = getServiceIds(a);
+        if (ids.includes(serviceId)) return a;
+        const newIds = [...ids, serviceId];
+        return { ...a, serviceId: newIds[0], serviceIds: newIds };
+      })
+    );
+  };
+
+  const removeServiceFromApt = (aptId: string, serviceId: string) => {
+    setAppointments((prev) =>
+      prev.map((a) => {
+        if (a.id !== aptId) return a;
+        const ids = getServiceIds(a).filter((id) => id !== serviceId);
+        if (ids.length === 0) return a; // keep at least one
+        return { ...a, serviceId: ids[0], serviceIds: ids };
+      })
+    );
+  };
+
+  const isToday = toDateStr(new Date()) === dateStr;
 
   return (
     <div className="space-y-8">
@@ -78,6 +125,38 @@ const Schedule = () => {
         </motion.button>
       </div>
 
+      {/* Day Navigation */}
+      <div className="flex items-center justify-between organic-card !py-3 !px-5">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => navigateDay(-1)}
+          className="p-2 rounded-xl hover:bg-secondary transition-colors"
+        >
+          <ChevronLeft size={20} className="text-muted-foreground" />
+        </motion.button>
+        <div className="text-center">
+          <p className="text-sm font-medium capitalize">{formatDateBR(selectedDate)}</p>
+          {!isToday && (
+            <button onClick={goToToday} className="text-xs text-primary hover:underline mt-0.5">
+              Voltar para hoje
+            </button>
+          )}
+          {isToday && (
+            <p className="text-xs text-muted-foreground mt-0.5">Hoje</p>
+          )}
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => navigateDay(1)}
+          className="p-2 rounded-xl hover:bg-secondary transition-colors"
+        >
+          <ChevronRight size={20} className="text-muted-foreground" />
+        </motion.button>
+      </div>
+
+      {/* New Appointment Form */}
       <AnimatePresence mode="wait">
         {showForm && (
           <motion.div
@@ -87,7 +166,7 @@ const Schedule = () => {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="organic-card space-y-4 overflow-hidden"
           >
-            <h3 className="section-title">Novo Agendamento</h3>
+            <h3 className="section-title">Novo Agendamento — {formatDateBR(selectedDate)}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <input placeholder="Nome do Cliente" value={form.clientName} onChange={(e) => setForm({ ...form, clientName: e.target.value })} className="organic-input" />
               <select value={form.barberId} onChange={(e) => setForm({ ...form, barberId: e.target.value })} className="organic-input">
@@ -108,7 +187,6 @@ const Schedule = () => {
                     <option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>
                   ))}
               </select>
-              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="organic-input" />
               <input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="organic-input" />
             </div>
             {selectedServices.length > 0 && (
@@ -132,84 +210,141 @@ const Schedule = () => {
                 </span>
               </div>
             )}
+            <div className="flex items-center gap-3 pt-1">
+              <Checkbox
+                id="completed-check"
+                checked={isCompleted}
+                onCheckedChange={(checked) => setIsCompleted(checked === true)}
+              />
+              <label htmlFor="completed-check" className="text-sm text-muted-foreground cursor-pointer select-none">
+                Marcar como já executado (cliente sem agendamento)
+              </label>
+            </div>
             <div className="flex gap-3">
               <button onClick={handleSave} className="organic-btn-primary">Salvar</button>
-              <button onClick={() => { setShowForm(false); setSelectedServices([]); }} className="organic-btn-secondary">Cancelar</button>
+              <button onClick={() => { setShowForm(false); setSelectedServices([]); setIsCompleted(false); }} className="organic-btn-secondary">Cancelar</button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="space-y-6">
-        {Object.entries(grouped)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([date, apts], i) => (
-            <MotionContainer key={date} delay={i * 0.05}>
-              <div className="organic-card space-y-4">
-                <h3 className="section-title">
-                  {new Date(date + "T12:00:00").toLocaleDateString("pt-BR", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
-                </h3>
-                <div className="space-y-3">
-                  {apts
-                    .sort((a, b) => a.time.localeCompare(b.time))
-                    .map((apt) => {
-                      const barber = mockBarbers.find((b) => b.id === apt.barberId);
-                      const svcIds = getServiceIds(apt);
-                      const services = svcIds.map((id) => mockServices.find((s) => s.id === id)).filter(Boolean);
-                      const status = statusConfig[apt.status];
-                      return (
-                        <div
-                          key={apt.id}
-                          className="flex items-center justify-between py-3 border-b border-border/30 last:border-0"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 min-w-[60px]">
-                              <Clock size={14} strokeWidth={1.5} className="text-muted-foreground" />
-                              <span className="text-sm font-medium">{apt.time}</span>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">{apt.clientName}</p>
-                              <p className="text-xs text-muted-foreground font-light">
-                                {barber?.name} · {services.map((s) => s!.name).join(", ")}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`text-xs px-3 py-1 rounded-full font-medium ${status.className}`}>
-                              {status.label}
-                            </span>
-                            {apt.status === "scheduled" && (
-                              <div className="flex gap-1">
-                                <motion.button
-                                  whileHover={{ scale: 1.1 }}
-                                  whileTap={{ scale: 0.9 }}
-                                  onClick={() => updateStatus(apt.id, "completed")}
-                                  className="p-1.5 rounded-full hover:bg-success/10 transition-colors"
-                                >
-                                  <CheckCircle2 size={16} className="text-success" />
-                                </motion.button>
-                                <motion.button
-                                  whileHover={{ scale: 1.1 }}
-                                  whileTap={{ scale: 0.9 }}
-                                  onClick={() => updateStatus(apt.id, "cancelled")}
-                                  className="p-1.5 rounded-full hover:bg-destructive/10 transition-colors"
-                                >
-                                  <XCircle size={16} className="text-destructive" />
-                                </motion.button>
-                              </div>
-                            )}
-                          </div>
+      {/* Appointments List */}
+      <div className="space-y-3">
+        {dayAppointments.length === 0 ? (
+          <MotionContainer delay={0}>
+            <div className="organic-card text-center py-12">
+              <p className="text-muted-foreground font-light">Nenhum agendamento para este dia</p>
+            </div>
+          </MotionContainer>
+        ) : (
+          dayAppointments.map((apt, i) => {
+            const barber = mockBarbers.find((b) => b.id === apt.barberId);
+            const svcIds = getServiceIds(apt);
+            const services = svcIds.map((id) => mockServices.find((s) => s.id === id)).filter(Boolean);
+            const status = statusConfig[apt.status];
+            const isEditing = editingApt === apt.id;
+
+            return (
+              <MotionContainer key={apt.id} delay={i * 0.03}>
+                <div className="organic-card !p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 min-w-[60px]">
+                        <Clock size={14} strokeWidth={1.5} className="text-muted-foreground" />
+                        <span className="text-sm font-medium">{apt.time}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{apt.clientName}</p>
+                        <p className="text-xs text-muted-foreground font-light">
+                          {barber?.name}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${status.className}`}>
+                        {status.label}
+                      </span>
+                      {apt.status === "scheduled" && (
+                        <div className="flex gap-1">
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => updateStatus(apt.id, "completed")}
+                            className="p-1.5 rounded-full hover:bg-success/10 transition-colors"
+                          >
+                            <CheckCircle2 size={16} className="text-success" />
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => updateStatus(apt.id, "cancelled")}
+                            className="p-1.5 rounded-full hover:bg-destructive/10 transition-colors"
+                          >
+                            <XCircle size={16} className="text-destructive" />
+                          </motion.button>
                         </div>
-                      );
-                    })}
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Services chips */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {services.map((svc) => (
+                      <span key={svc!.id} className="flex items-center gap-1.5 text-xs bg-secondary px-3 py-1 rounded-full">
+                        {svc!.name} · R$ {svc!.price.toFixed(2)}
+                        {isEditing && svcIds.length > 1 && (
+                          <button
+                            onClick={() => removeServiceFromApt(apt.id, svc!.id)}
+                            className="hover:text-destructive transition-colors"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setEditingApt(isEditing ? null : apt.id)}
+                      className="p-1 rounded-full hover:bg-secondary transition-colors"
+                      title="Editar serviços"
+                    >
+                      <PlusCircle size={14} className="text-muted-foreground" />
+                    </motion.button>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      Total: R$ {services.reduce((acc, s) => acc + s!.price, 0).toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* Add service dropdown when editing */}
+                  <AnimatePresence>
+                    {isEditing && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <select
+                          value=""
+                          onChange={(e) => { addServiceToApt(apt.id, e.target.value); }}
+                          className="organic-input mt-2 text-sm"
+                        >
+                          <option value="">Adicionar serviço...</option>
+                          {mockServices
+                            .filter((s) => !svcIds.includes(s.id))
+                            .map((s) => (
+                              <option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>
+                            ))}
+                        </select>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </div>
-            </MotionContainer>
-          ))}
+              </MotionContainer>
+            );
+          })
+        )}
       </div>
     </div>
   );
