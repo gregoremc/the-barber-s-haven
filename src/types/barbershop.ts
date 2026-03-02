@@ -7,6 +7,31 @@ export interface Product {
   stock: number;
 }
 
+export interface SupplierCustomField {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface SupplierAttachment {
+  id: string;
+  name: string;
+  url: string;
+  date: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  cpfCnpj: string;
+  address: string;
+  pixKey: string;
+  phone: string;
+  website: string;
+  customFields?: SupplierCustomField[];
+  attachments?: SupplierAttachment[];
+}
+
 export interface Service {
   id: string;
   name: string;

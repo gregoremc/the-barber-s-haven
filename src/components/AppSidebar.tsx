@@ -21,7 +21,7 @@ import { shopStore } from "@/data/shopStore";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/products", icon: Package, label: "Produtos" },
+  { to: "/products", icon: Package, label: "Fornecedores/Produtos" },
   { to: "/services", icon: Scissors, label: "Serviços" },
   { to: "/schedule", icon: CalendarDays, label: "Agenda" },
   { to: "/payments", icon: Wallet, label: "Pagamentos" },
