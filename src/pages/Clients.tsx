@@ -1,26 +1,11 @@
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Users } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
-
-export interface Client {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  notes: string;
-}
-
-const mockClients: Client[] = [
-  { id: "1", name: "João Pedro", phone: "(11) 99999-0001", email: "joao@email.com", notes: "Cliente frequente" },
-  { id: "2", name: "Marcos Oliveira", phone: "(11) 99999-0002", email: "marcos@email.com", notes: "" },
-  { id: "3", name: "Lucas Mendes", phone: "(11) 99999-0003", email: "lucas@email.com", notes: "Prefere corte degradê" },
-  { id: "4", name: "Felipe Costa", phone: "(11) 99999-0004", email: "felipe@email.com", notes: "" },
-  { id: "5", name: "Bruno Alves", phone: "(11) 99999-0005", email: "bruno@email.com", notes: "Alérgico a alguns produtos" },
-];
+import { clientsStore, Client } from "@/data/clientsStore";
 
 const Clients = () => {
-  const [clients, setClients] = useState<Client[]>(mockClients);
+  const clients = useSyncExternalStore(clientsStore.subscribe, clientsStore.getClients);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editClient, setEditClient] = useState<Client | null>(null);
@@ -48,24 +33,15 @@ const Clients = () => {
   const handleSave = () => {
     if (!form.name) return;
     if (editClient) {
-      setClients((prev) =>
-        prev.map((c) =>
-          c.id === editClient.id
-            ? { ...c, name: form.name, phone: form.phone, email: form.email, notes: form.notes }
-            : c
-        )
-      );
+      clientsStore.updateClient(editClient.id, form);
     } else {
-      setClients((prev) => [
-        ...prev,
-        { id: String(Date.now()), name: form.name, phone: form.phone, email: form.email, notes: form.notes },
-      ]);
+      clientsStore.addClient({ id: String(Date.now()), ...form });
     }
     setShowForm(false);
   };
 
   const handleDelete = (id: string) => {
-    setClients((prev) => prev.filter((c) => c.id !== id));
+    clientsStore.deleteClient(id);
   };
 
   return (
