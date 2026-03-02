@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, Package } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ConfirmDelete from "@/components/ConfirmDelete";
-import { mockProducts } from "@/data/mockData";
+import { productsStore } from "@/data/productsStore";
 import { Product } from "@/types/barbershop";
 import { trashStore } from "@/data/trashStore";
 import { registerRestoreHandler } from "@/pages/Trash";
 
 const Products = () => {
-  const [products, setProducts] = useState<Product[]>(mockProducts);
+  const products = useSyncExternalStore(productsStore.subscribe, productsStore.getProducts);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -18,7 +18,7 @@ const Products = () => {
 
   useEffect(() => {
     registerRestoreHandler("product", (item) => {
-      setProducts((prev) => [...prev, item.data as Product]);
+      productsStore.addProduct(item.data as Product);
     });
   }, []);
 
@@ -53,25 +53,22 @@ const Products = () => {
   const handleSave = () => {
     if (!form.name) return;
     if (editProduct) {
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === editProduct.id
-            ? { ...p, name: form.name, category: form.category, costPrice: Number(form.costPrice), sellPrice: Number(form.sellPrice), stock: Number(form.stock) }
-            : p
-        )
-      );
+      productsStore.updateProduct(editProduct.id, {
+        name: form.name,
+        category: form.category,
+        costPrice: Number(form.costPrice),
+        sellPrice: Number(form.sellPrice),
+        stock: Number(form.stock),
+      });
     } else {
-      setProducts((prev) => [
-        ...prev,
-        {
-          id: String(Date.now()),
-          name: form.name,
-          category: form.category,
-          costPrice: Number(form.costPrice),
-          sellPrice: Number(form.sellPrice),
-          stock: Number(form.stock),
-        },
-      ]);
+      productsStore.addProduct({
+        id: String(Date.now()),
+        name: form.name,
+        category: form.category,
+        costPrice: Number(form.costPrice),
+        sellPrice: Number(form.sellPrice),
+        stock: Number(form.stock),
+      });
     }
     setShowForm(false);
   };
@@ -79,7 +76,7 @@ const Products = () => {
   const confirmDelete = () => {
     if (deleteTarget) {
       trashStore.addItem({ type: "product", typeLabel: "Produto", name: deleteTarget.name, data: deleteTarget });
-      setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      productsStore.deleteProduct(deleteTarget.id);
       setDeleteTarget(null);
     }
   };

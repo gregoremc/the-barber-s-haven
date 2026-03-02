@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Clock, CheckCircle2, XCircle, X, ChevronLeft, ChevronRight, PlusCircle, Trash2 } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ClientSearch from "@/components/ClientSearch";
-import { mockAppointments, mockServices } from "@/data/mockData";
+import { mockServices } from "@/data/mockData";
 import { barbersStore } from "@/data/barbersStore";
+import { appointmentsStore } from "@/data/appointmentsStore";
 import { Appointment } from "@/types/barbershop";
 import { paymentsStore } from "@/data/paymentsStore";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,7 +31,7 @@ const toDateStr = (date: Date) => date.toISOString().split("T")[0];
 
 const Schedule = () => {
   const barbersList = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
+  const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ barberId: "", clientName: "", time: "" });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -86,19 +87,16 @@ const Schedule = () => {
   const handleSave = () => {
     if (!form.clientName || !form.barberId || selectedServices.length === 0) return;
     const status = isCompleted ? "completed" : "scheduled";
-    setAppointments((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        barberId: form.barberId,
-        clientName: form.clientName,
-        serviceId: selectedServices[0],
-        serviceIds: selectedServices,
-        date: dateStr,
-        time: form.time,
-        status,
-      },
-    ]);
+    appointmentsStore.addAppointment({
+      id: String(Date.now()),
+      barberId: form.barberId,
+      clientName: form.clientName,
+      serviceId: selectedServices[0],
+      serviceIds: selectedServices,
+      date: dateStr,
+      time: form.time,
+      status,
+    });
     if (status === "completed") {
       generateCommissionPayment(form.barberId, selectedServices, dateStr);
     }
@@ -114,32 +112,24 @@ const Schedule = () => {
       const svcIds = getServiceIds(apt);
       generateCommissionPayment(apt.barberId, svcIds, apt.date);
     }
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status } : a))
-    );
+    appointmentsStore.updateStatus(id, status);
   };
 
   const addServiceToApt = (aptId: string, serviceId: string) => {
-    setAppointments((prev) =>
-      prev.map((a) => {
-        if (a.id !== aptId) return a;
-        const ids = getServiceIds(a);
-        if (ids.includes(serviceId)) return a;
-        const newIds = [...ids, serviceId];
-        return { ...a, serviceId: newIds[0], serviceIds: newIds };
-      })
-    );
+    const apt = appointments.find((a) => a.id === aptId);
+    if (!apt) return;
+    const ids = getServiceIds(apt);
+    if (ids.includes(serviceId)) return;
+    const newIds = [...ids, serviceId];
+    appointmentsStore.updateAppointment(aptId, { serviceId: newIds[0], serviceIds: newIds });
   };
 
   const removeServiceFromApt = (aptId: string, serviceId: string) => {
-    setAppointments((prev) =>
-      prev.map((a) => {
-        if (a.id !== aptId) return a;
-        const ids = getServiceIds(a).filter((id) => id !== serviceId);
-        if (ids.length === 0) return a; // keep at least one
-        return { ...a, serviceId: ids[0], serviceIds: ids };
-      })
-    );
+    const apt = appointments.find((a) => a.id === aptId);
+    if (!apt) return;
+    const ids = getServiceIds(apt).filter((id) => id !== serviceId);
+    if (ids.length === 0) return;
+    appointmentsStore.updateAppointment(aptId, { serviceId: ids[0], serviceIds: ids });
   };
 
   const isToday = toDateStr(new Date()) === dateStr;
