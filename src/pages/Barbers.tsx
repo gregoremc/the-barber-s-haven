@@ -1,15 +1,9 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit2, Trash2, Paperclip, X, User, FileText, Download } from "lucide-react";
+import { Plus, Edit2, Trash2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { mockBarbers, mockAppointments, mockServices, mockProducts } from "@/data/mockData";
 import { Barber, BarberAttachment } from "@/types/barbershop";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 
 const Barbers = () => {
   const [barbers, setBarbers] = useState<Barber[]>(mockBarbers);
@@ -90,41 +84,52 @@ const Barbers = () => {
     );
   };
 
-  // Chart data: monthly services/products for selected barber
   const selectedBarber = barbers.find((b) => b.id === selectedBarberId);
 
-  const getMonthlyChartData = (barberId: string) => {
+  const getMonthlyItems = (barberId: string, monthOffset: number) => {
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const targetMonth = now.getMonth() + monthOffset;
+    const targetYear = now.getFullYear() + Math.floor(targetMonth / 12);
+    const normalizedMonth = ((targetMonth % 12) + 12) % 12;
 
-    // completed appointments this month for this barber
     const barberApts = mockAppointments.filter((a) => {
       if (a.barberId !== barberId || a.status !== "completed") return false;
       const d = new Date(a.date + "T12:00:00");
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      return d.getMonth() === normalizedMonth && d.getFullYear() === targetYear;
     });
 
-    const serviceTotals: Record<string, number> = {};
+    const totals: Record<string, { qty: number; total: number; type: "serviço" | "produto" }> = {};
     barberApts.forEach((apt) => {
       const svcIds = apt.serviceIds?.length ? apt.serviceIds : apt.serviceId ? [apt.serviceId] : [];
       svcIds.forEach((sid) => {
         const svc = mockServices.find((s) => s.id === sid);
         if (svc) {
-          serviceTotals[svc.name] = (serviceTotals[svc.name] || 0) + svc.price;
+          if (!totals[svc.name]) totals[svc.name] = { qty: 0, total: 0, type: "serviço" };
+          totals[svc.name].qty += 1;
+          totals[svc.name].total += svc.price;
         }
       });
     });
 
-    // Products (simulated: each product sold once for demo)
-    mockProducts.forEach((p) => {
-      serviceTotals[p.name] = (serviceTotals[p.name] || 0) + p.sellPrice;
-    });
+    // Simulated product sales for demo
+    if (monthOffset === 0) {
+      mockProducts.forEach((p) => {
+        totals[p.name] = { qty: 1, total: p.sellPrice, type: "produto" };
+      });
+    }
 
-    return Object.entries(serviceTotals).map(([name, total]) => ({
-      name,
-      total,
-    }));
+    return totals;
+  };
+
+  const currentItems = selectedBarberId ? getMonthlyItems(selectedBarberId, 0) : {};
+  const prevItems = selectedBarberId ? getMonthlyItems(selectedBarberId, -1) : {};
+
+  const getGrowth = (name: string) => {
+    const current = currentItems[name]?.total || 0;
+    const prev = prevItems[name]?.total || 0;
+    if (prev === 0 && current === 0) return 0;
+    if (prev === 0) return 100;
+    return ((current - prev) / prev) * 100;
   };
 
   const getTotalReceivable = (barberId: string) => {
@@ -148,17 +153,9 @@ const Barbers = () => {
     return total;
   };
 
-  const chartData = selectedBarberId ? getMonthlyChartData(selectedBarberId) : [];
   const totalReceivable = selectedBarberId ? getTotalReceivable(selectedBarberId) : 0;
-
-  const chartConfig = {
-    total: {
-      label: "Valor (R$)",
-      color: "hsl(28, 40%, 50%)",
-    },
-  };
-
   const monthName = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const allItemNames = Object.keys(currentItems);
 
   return (
     <div className="space-y-8">
@@ -364,16 +361,38 @@ const Barbers = () => {
             <MotionContainer delay={0.15}>
               <div className="organic-card">
                 <h3 className="section-title mb-4 capitalize">Vendas — {monthName}</h3>
-                {chartData.length > 0 ? (
-                  <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" height={60} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="total" fill="var(--color-total)" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ChartContainer>
+                {allItemNames.length > 0 ? (
+                  <div className="space-y-3">
+                    {allItemNames.map((name) => {
+                      const item = currentItems[name];
+                      const growth = getGrowth(name);
+                      return (
+                        <div key={name} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{name}</p>
+                            <p className="text-xs text-muted-foreground font-light">
+                              {item.type === "serviço" ? `${item.qty}x serviço` : `${item.qty}x produto`}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <p className="text-sm font-medium">R$ {item.total.toFixed(2)}</p>
+                            <div className={`flex items-center gap-1 text-xs font-medium min-w-[70px] justify-end ${
+                              growth > 0 ? "text-success" : growth < 0 ? "text-destructive" : "text-muted-foreground"
+                            }`}>
+                              {growth > 0 ? <TrendingUp size={14} /> : growth < 0 ? <TrendingDown size={14} /> : <Minus size={14} />}
+                              <span>{growth > 0 ? "+" : ""}{growth.toFixed(0)}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="flex items-center justify-between pt-2">
+                      <p className="text-sm font-medium">Total do mês</p>
+                      <p className="text-sm font-medium text-accent">
+                        R$ {Object.values(currentItems).reduce((acc, i) => acc + i.total, 0).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
                 ) : (
                   <p className="text-muted-foreground text-sm text-center py-8">Nenhuma venda registrada neste mês</p>
                 )}
