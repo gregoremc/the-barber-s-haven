@@ -103,7 +103,7 @@ const Services = () => {
                 <div className="text-right">
                   <span className="text-xl font-medium">R$ {service.price.toFixed(2)}</span>
                   <p className="text-xs text-muted-foreground font-light">Custo: R$ {service.costPrice.toFixed(2)}</p>
-                  <p className="text-xs text-success font-medium">Lucro: {((1 - service.costPrice / service.price) * 100).toFixed(0)}%</p>
+                  <p className="text-xs text-success font-medium">Lucro: R$ {(service.price - service.costPrice).toFixed(2)}</p>
                 </div>
               </div>
               <div>
