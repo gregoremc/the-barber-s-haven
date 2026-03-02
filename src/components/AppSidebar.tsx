@@ -31,6 +31,9 @@ const navItems = [
   { to: "/clients", icon: Users, label: "Clientes" },
 ];
 
+const COLLAPSED_WIDTH = 72;
+const EXPANDED_WIDTH = 256;
+
 const AppSidebar = () => {
   const location = useLocation();
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
@@ -38,6 +41,9 @@ const AppSidebar = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [settingsForm, setSettingsForm] = useState({ name: shop.name, subtitle: shop.subtitle });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [hovered, setHovered] = useState(false);
+
+  const expanded = hovered;
 
   useEffect(() => {
     if (dark) {
@@ -67,99 +73,172 @@ const AppSidebar = () => {
 
   return (
     <>
-      <aside className="fixed left-0 top-0 h-screen w-64 bg-card border-r border-border/50 flex flex-col z-50">
-        <div className="p-8">
-          <div className="flex items-center gap-3 mb-2">
-            {/* Logo */}
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
-              {shop.logoUrl ? (
-                <img src={shop.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                <Scissors size={20} strokeWidth={1.5} className="text-primary" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-medium tracking-tight text-foreground truncate">
-                {shop.name}
-              </h1>
-              <p className="text-xs text-muted-foreground font-light truncate">
-                {shop.subtitle}
-              </p>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.1, rotate: 45 }}
-              whileTap={{ scale: 0.9 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
-              onClick={openSettings}
-              className="p-1.5 rounded-lg hover:bg-secondary transition-colors flex-shrink-0"
-              title="Configurações"
-            >
-              <Settings size={15} className="text-muted-foreground" />
-            </motion.button>
+      <motion.aside
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        animate={{ width: expanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH }}
+        transition={{ type: "spring", stiffness: 400, damping: 35 }}
+        className="fixed left-0 top-0 h-screen bg-card border-r border-border/50 flex flex-col z-50 overflow-hidden"
+      >
+        {/* Header */}
+        <div className="p-4 flex items-center gap-3" style={{ minHeight: 80 }}>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+            {shop.logoUrl ? (
+              <img src={shop.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              <Scissors size={20} strokeWidth={1.5} className="text-primary" />
+            )}
           </div>
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.15 }}
+                className="flex-1 min-w-0 overflow-hidden"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-xl font-medium tracking-tight text-foreground truncate whitespace-nowrap">
+                      {shop.name}
+                    </h1>
+                    <p className="text-xs text-muted-foreground font-light truncate whitespace-nowrap">
+                      {shop.subtitle}
+                    </p>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 45 }}
+                    whileTap={{ scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    onClick={openSettings}
+                    className="p-1.5 rounded-lg hover:bg-secondary transition-colors flex-shrink-0"
+                    title="Configurações"
+                  >
+                    <Settings size={15} className="text-muted-foreground" />
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1">
+        {/* Nav */}
+        <nav className="flex-1 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
             return (
               <NavLink key={item.to} to={item.to}>
                 <motion.div
-                  whileHover={{ x: 4 }}
+                  whileHover={{ x: expanded ? 4 : 0 }}
                   whileTap={{ scale: 0.98 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors duration-200 ${
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-colors duration-200 ${
                     isActive
                       ? "bg-primary text-primary-foreground font-medium"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
+                  title={!expanded ? item.label : undefined}
                 >
-                  <item.icon size={18} strokeWidth={1.5} />
-                  <span>{item.label}</span>
+                  <item.icon size={18} strokeWidth={1.5} className="flex-shrink-0" />
+                  <AnimatePresence>
+                    {expanded && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="whitespace-nowrap overflow-hidden"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               </NavLink>
             );
           })}
         </nav>
 
-        <div className="p-6 space-y-3">
+        {/* Footer */}
+        <div className="p-3 space-y-2">
           <NavLink to="/trash">
             <motion.div
-              whileHover={{ x: 4 }}
+              whileHover={{ x: expanded ? 4 : 0 }}
               whileTap={{ scale: 0.98 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors duration-200 ${
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-colors duration-200 ${
                 location.pathname === "/trash"
                   ? "bg-primary text-primary-foreground font-medium"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               }`}
+              title={!expanded ? "Lixeira" : undefined}
             >
-              <Trash2 size={18} strokeWidth={1.5} />
-              <span>Lixeira</span>
+              <Trash2 size={18} strokeWidth={1.5} className="flex-shrink-0" />
+              <AnimatePresence>
+                {expanded && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: "auto" }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="whitespace-nowrap overflow-hidden"
+                  >
+                    Lixeira
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </motion.div>
           </NavLink>
+
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             onClick={() => setDark(!dark)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            title={!expanded ? (dark ? "Modo Claro" : "Modo Escuro") : undefined}
           >
-            {dark ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
-            <span>{dark ? "Modo Claro" : "Modo Escuro"}</span>
+            {dark ? <Sun size={18} strokeWidth={1.5} className="flex-shrink-0" /> : <Moon size={18} strokeWidth={1.5} className="flex-shrink-0" />}
+            <AnimatePresence>
+              {expanded && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="whitespace-nowrap overflow-hidden"
+                >
+                  {dark ? "Modo Claro" : "Modo Escuro"}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </motion.button>
-          <div className="organic-card !p-4">
-            <p className="text-xs text-muted-foreground font-light">Hoje</p>
-            <p className="text-sm font-medium mt-1">
-              {new Date().toLocaleDateString("pt-BR", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
-            </p>
-          </div>
+
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.15 }}
+                className="overflow-hidden"
+              >
+                <div className="organic-card !p-4">
+                  <p className="text-xs text-muted-foreground font-light">Hoje</p>
+                  <p className="text-sm font-medium mt-1 whitespace-nowrap">
+                    {new Date().toLocaleDateString("pt-BR", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                    })}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Settings Modal */}
       <AnimatePresence>
@@ -180,63 +259,61 @@ const AppSidebar = () => {
               className="fixed inset-0 z-[61] flex items-center justify-center pointer-events-none"
             >
               <div className="w-full max-w-md pointer-events-auto organic-card space-y-5 mx-4">
-              <div className="flex items-center justify-between">
-                <h3 className="section-title">Configurações da Barbearia</h3>
-                <button onClick={() => setShowSettings(false)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-                  <X size={16} className="text-muted-foreground" />
-                </button>
-              </div>
+                <div className="flex items-center justify-between">
+                  <h3 className="section-title">Configurações da Barbearia</h3>
+                  <button onClick={() => setShowSettings(false)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+                    <X size={16} className="text-muted-foreground" />
+                  </button>
+                </div>
 
-              {/* Logo upload */}
-              <div className="flex flex-col items-center gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-20 h-20 rounded-2xl bg-secondary border-2 border-dashed border-border hover:border-primary/50 flex items-center justify-center overflow-hidden transition-colors cursor-pointer"
-                >
-                  {shop.logoUrl ? (
-                    <img src={shop.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                  ) : (
-                    <Scissors size={32} strokeWidth={1.5} className="text-muted-foreground" />
-                  )}
-                </motion.button>
-                <p className="text-xs text-muted-foreground">Clique para alterar a logo</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleLogoSelect}
-                />
-              </div>
-
-              {/* Name fields */}
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground font-medium mb-1 block">Nome da Barbearia</label>
+                <div className="flex flex-col items-center gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-20 h-20 rounded-2xl bg-secondary border-2 border-dashed border-border hover:border-primary/50 flex items-center justify-center overflow-hidden transition-colors cursor-pointer"
+                  >
+                    {shop.logoUrl ? (
+                      <img src={shop.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <Scissors size={32} strokeWidth={1.5} className="text-muted-foreground" />
+                    )}
+                  </motion.button>
+                  <p className="text-xs text-muted-foreground">Clique para alterar a logo</p>
                   <input
-                    value={settingsForm.name}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })}
-                    className="organic-input"
-                    placeholder="Nome da barbearia"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoSelect}
                   />
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground font-medium mb-1 block">Subtítulo</label>
-                  <input
-                    value={settingsForm.subtitle}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, subtitle: e.target.value })}
-                    className="organic-input"
-                    placeholder="Ex: Gestão Inteligente"
-                  />
-                </div>
-              </div>
 
-              <div className="flex gap-3">
-                <button onClick={handleSaveSettings} className="organic-btn-primary flex-1">Salvar</button>
-                <button onClick={() => setShowSettings(false)} className="organic-btn-secondary flex-1">Cancelar</button>
-              </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground font-medium mb-1 block">Nome da Barbearia</label>
+                    <input
+                      value={settingsForm.name}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })}
+                      className="organic-input"
+                      placeholder="Nome da barbearia"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground font-medium mb-1 block">Subtítulo</label>
+                    <input
+                      value={settingsForm.subtitle}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, subtitle: e.target.value })}
+                      className="organic-input"
+                      placeholder="Ex: Gestão Inteligente"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={handleSaveSettings} className="organic-btn-primary flex-1">Salvar</button>
+                  <button onClick={() => setShowSettings(false)} className="organic-btn-secondary flex-1">Cancelar</button>
+                </div>
               </div>
             </motion.div>
           </>
