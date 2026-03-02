@@ -71,7 +71,8 @@ const Payments = () => {
 
   const totalPaid = monthPayments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
   const totalPending = monthPayments.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0);
-  const alerts = getPaymentAlerts(barbers);
+  const activeBarbers = barbers.filter((b) => b.active !== false);
+  const alerts = getPaymentAlerts(activeBarbers);
 
   const handleSave = () => {
     if (!form.barberId || !form.amount) return;
@@ -192,7 +193,7 @@ const Payments = () => {
         </MotionContainer>
         <MotionContainer delay={0.1} className="organic-card">
           <p className="stat-label">Barbeiros Ativos</p>
-          <p className="stat-value mt-1">{barbers.length}</p>
+          <p className="stat-value mt-1">{barbers.filter((b) => b.active !== false).length}</p>
         </MotionContainer>
       </div>
 
@@ -243,7 +244,7 @@ const Payments = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <select value={form.barberId} onChange={(e) => setForm({ ...form, barberId: e.target.value })} className="organic-input">
                 <option value="">Selecione o Barbeiro</option>
-                {barbers.map((b) => (
+                {activeBarbers.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
               </select>
@@ -259,7 +260,7 @@ const Payments = () => {
         )}
       </AnimatePresence>
 
-      {barbers.map((barber, i) => {
+      {activeBarbers.map((barber, i) => {
         const barberPayments = monthPayments.filter((p) => p.barberId === barber.id);
         if (barberPayments.length === 0) return null;
         return (
