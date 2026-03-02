@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Scissors } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ConfirmDelete from "@/components/ConfirmDelete";
-import { mockServices } from "@/data/mockData";
+import { servicesStore } from "@/data/servicesStore";
 import { Service } from "@/types/barbershop";
 import { trashStore } from "@/data/trashStore";
 import { registerRestoreHandler } from "@/pages/Trash";
 
 const Services = () => {
-  const [services, setServices] = useState<Service[]>(mockServices);
+  const services = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
   const [showForm, setShowForm] = useState(false);
   const [editService, setEditService] = useState<Service | null>(null);
   const [form, setForm] = useState({ name: "", costPrice: "", price: "", duration: "", description: "" });
@@ -17,11 +17,9 @@ const Services = () => {
 
   useEffect(() => {
     registerRestoreHandler("service", (item) => {
-      setServices((prev) => [...prev, item.data as Service]);
+      servicesStore.addService(item.data as Service);
     });
   }, []);
-
-  const totalRevenue = services.reduce((a, s) => a + s.price, 0);
 
   const openNew = () => {
     setEditService(null);
@@ -38,18 +36,22 @@ const Services = () => {
   const handleSave = () => {
     if (!form.name) return;
     if (editService) {
-      setServices((prev) =>
-        prev.map((s) =>
-          s.id === editService.id
-            ? { ...s, name: form.name, costPrice: Number(form.costPrice), price: Number(form.price), duration: Number(form.duration), description: form.description }
-            : s
-        )
-      );
+      servicesStore.updateService(editService.id, {
+        name: form.name,
+        costPrice: Number(form.costPrice),
+        price: Number(form.price),
+        duration: Number(form.duration),
+        description: form.description,
+      });
     } else {
-      setServices((prev) => [
-        ...prev,
-        { id: String(Date.now()), name: form.name, costPrice: Number(form.costPrice), price: Number(form.price), duration: Number(form.duration), description: form.description },
-      ]);
+      servicesStore.addService({
+        id: String(Date.now()),
+        name: form.name,
+        costPrice: Number(form.costPrice),
+        price: Number(form.price),
+        duration: Number(form.duration),
+        description: form.description,
+      });
     }
     setShowForm(false);
   };
@@ -57,7 +59,7 @@ const Services = () => {
   const confirmDelete = () => {
     if (deleteTarget) {
       trashStore.addItem({ type: "service", typeLabel: "Serviço", name: deleteTarget.name, data: deleteTarget });
-      setServices((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      servicesStore.deleteService(deleteTarget.id);
       setDeleteTarget(null);
     }
   };
