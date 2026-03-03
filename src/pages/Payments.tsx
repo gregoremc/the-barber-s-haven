@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import BarberPaymentModal from "@/components/BarberPaymentModal";
-import ConfirmDelete from "@/components/ConfirmDelete";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 type GroupedItem = {
@@ -533,18 +533,31 @@ const Payments = () => {
       )}
 
       {/* Undo Confirm */}
-      <ConfirmDelete
-        open={!!undoConfirm}
-        itemName={undoConfirm?.label}
-        onCancel={() => setUndoConfirm(null)}
-        onConfirm={() => {
-          if (undoConfirm) {
-            paymentsStore.removeDisbursement(undoConfirm.id);
-            toast.success("Lançamento desfeito com sucesso");
-            setUndoConfirm(null);
-          }
-        }}
-      />
+      <AlertDialog open={!!undoConfirm} onOpenChange={(open) => !open && setUndoConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir {undoConfirm?.label ? `"${undoConfirm.label}"` : "este lançamento"}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (undoConfirm) {
+                  paymentsStore.removeDisbursement(undoConfirm.id);
+                  toast.success("Lançamento desfeito com sucesso");
+                  setUndoConfirm(null);
+                }
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
