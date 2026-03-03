@@ -30,12 +30,7 @@ export const mockAppointments: Appointment[] = [
   { id: "5", barberId: "2", clientName: "Bruno Alves", serviceId: "4", date: "2026-03-03", time: "09:30", status: "scheduled" },
 ];
 
-export const mockBarberPayments: BarberPayment[] = [
-  { id: "1", barberId: "1", amount: 1250, date: "2026-02-28", description: "Comissão Fevereiro", status: "paid" },
-  { id: "2", barberId: "2", amount: 980, date: "2026-02-28", description: "Comissão Fevereiro", status: "paid" },
-  { id: "3", barberId: "3", amount: 1100, date: "2026-02-28", description: "Comissão Fevereiro", status: "pending" },
-  { id: "4", barberId: "1", amount: 450, date: "2026-03-07", description: "Comissão Semana 1 Março", status: "pending" },
-];
+export const mockBarberPayments: BarberPayment[] = [];
 
 export const mockBills: Bill[] = [
   { id: "1", description: "Aluguel do Espaço", amount: 3500, dueDate: "2026-03-10", category: "Aluguel", status: "pending" },
