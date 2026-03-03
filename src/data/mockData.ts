@@ -1,11 +1,11 @@
 import { Product, Service, Barber, Appointment, BarberPayment, Bill } from "@/types/barbershop";
 
 export const mockProducts: Product[] = [
-  { id: "1", name: "Pomada Modeladora", category: "Styling", costPrice: 18, sellPrice: 45, stock: 12 },
-  { id: "2", name: "Óleo para Barba", category: "Barba", costPrice: 22, sellPrice: 55, stock: 8 },
-  { id: "3", name: "Shampoo Masculino", category: "Cabelo", costPrice: 15, sellPrice: 38, stock: 20 },
-  { id: "4", name: "Balm Pós-Barba", category: "Barba", costPrice: 12, sellPrice: 32, stock: 15 },
-  { id: "5", name: "Cera Fixadora", category: "Styling", costPrice: 20, sellPrice: 50, stock: 6 },
+  { id: "1", name: "Pomada Modeladora", category: "Styling", costPrice: 18, sellPrice: 45, stock: 12, commission: 10 },
+  { id: "2", name: "Óleo para Barba", category: "Barba", costPrice: 22, sellPrice: 55, stock: 8, commission: 10 },
+  { id: "3", name: "Shampoo Masculino", category: "Cabelo", costPrice: 15, sellPrice: 38, stock: 20, commission: 10 },
+  { id: "4", name: "Balm Pós-Barba", category: "Barba", costPrice: 12, sellPrice: 32, stock: 15, commission: 10 },
+  { id: "5", name: "Cera Fixadora", category: "Styling", costPrice: 20, sellPrice: 50, stock: 6, commission: 10 },
 ];
 
 export const mockServices: Service[] = [

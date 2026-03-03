@@ -5,6 +5,7 @@ export interface Product {
   costPrice: number;
   sellPrice: number;
   stock: number;
+  commission: number; // percentage for seller
 }
 
 export interface SupplierCustomField {
