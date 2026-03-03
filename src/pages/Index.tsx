@@ -221,7 +221,7 @@ const Dashboard = () => {
           className="organic-btn-primary flex items-center gap-2"
         >
           <Plus size={16} />
-          + Novo Agendamento
+          Novo Agendamento
         </motion.button>
         <motion.button
           whileHover={{ scale: 1.03 }}
