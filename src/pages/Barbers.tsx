@@ -1,6 +1,6 @@
 import { useState, useRef, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus, Power } from "lucide-react";
+import { Plus, Edit2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus, Power, Users } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { mockServices, mockProducts } from "@/data/mockData";
 import { Barber, BarberAttachment } from "@/types/barbershop";
@@ -183,6 +183,15 @@ const Barbers = () => {
           <Plus size={16} />
           Novo Barbeiro
         </motion.button>
+      </div>
+
+      {/* Active barbers count */}
+      <div className="organic-card !py-3 !px-4 flex items-center gap-3 w-fit">
+        <Users size={16} className="text-muted-foreground" />
+        <span className="text-sm">
+          <span className="font-medium">{barbers.filter(b => b.active !== false).length}</span>
+          <span className="text-muted-foreground ml-1">barbeiro{barbers.filter(b => b.active !== false).length !== 1 ? "s" : ""} ativo{barbers.filter(b => b.active !== false).length !== 1 ? "s" : ""}</span>
+        </span>
       </div>
 
       {/* Form */}

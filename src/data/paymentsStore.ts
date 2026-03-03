@@ -33,7 +33,7 @@ export const paymentsStore = {
     const disbursed = monthPayments
       .filter((p) => p.type === "payment" || p.type === "advance")
       .reduce((a, p) => a + p.amount, 0);
-    return Math.max(0, commissions - disbursed);
+    return commissions - disbursed;
   },
   addDisbursement: (barberId: string, amount: number, date: string, type: "payment" | "advance", description: string) => {
     payments = [

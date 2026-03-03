@@ -88,6 +88,9 @@ const Payments = () => {
   const formatMonthLabel = (date: Date) =>
     date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
+  const activeBarbers = barbers.filter((b) => b.active !== false);
+  const alerts = getPaymentAlerts(activeBarbers);
+
   const monthPayments = useMemo(() => {
     return payments.filter((p) => {
       if (!p.date) return false;
@@ -104,10 +107,23 @@ const Payments = () => {
     });
   }, [payments, selectedMonthStr]);
 
-  const totalPaid = monthPayments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
-  const totalPending = monthPayments.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0);
-  const activeBarbers = barbers.filter((b) => b.active !== false);
-  const alerts = getPaymentAlerts(activeBarbers);
+  const monthAdvances = useMemo(() => {
+    return payments.filter((p) => {
+      if (!p.date) return false;
+      if (p.type !== "advance") return false;
+      return p.date.substring(0, 7) === selectedMonthStr;
+    });
+  }, [payments, selectedMonthStr]);
+
+  const totalPaid = monthDisbursements.filter((p) => p.type === "payment").reduce((a, p) => a + p.amount, 0);
+  const totalPending = (() => {
+    let sum = 0;
+    activeBarbers.forEach((b) => {
+      sum += paymentsStore.getBarberBalance(b.id, selectedMonthStr);
+    });
+    return sum;
+  })();
+  const totalAdvances = monthAdvances.reduce((a, p) => a + p.amount, 0);
 
   const handleSave = () => {
     if (!form.barberId || !form.amount) return;
@@ -168,17 +184,11 @@ const Payments = () => {
           </PopoverTrigger>
           <PopoverContent className="w-64 p-4 pointer-events-auto" align="center">
             <div className="flex items-center justify-between mb-3">
-              <button
-                onClick={() => setPickerYear((y) => y - 1)}
-                className="p-1 rounded hover:bg-secondary transition-colors"
-              >
+              <button onClick={() => setPickerYear((y) => y - 1)} className="p-1 rounded hover:bg-secondary transition-colors">
                 <ChevronLeft size={16} className="text-muted-foreground" />
               </button>
               <span className="text-sm font-medium">{pickerYear}</span>
-              <button
-                onClick={() => setPickerYear((y) => y + 1)}
-                className="p-1 rounded hover:bg-secondary transition-colors"
-              >
+              <button onClick={() => setPickerYear((y) => y + 1)} className="p-1 rounded hover:bg-secondary transition-colors">
                 <ChevronRight size={16} className="text-muted-foreground" />
               </button>
             </div>
@@ -217,18 +227,21 @@ const Payments = () => {
         </motion.button>
       </div>
 
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <MotionContainer className="organic-card">
           <p className="stat-label">Total Pago</p>
-          <p className="stat-value mt-1 text-success">R$ {totalPaid.toLocaleString("pt-BR")}</p>
+          <p className="stat-value mt-1 text-success">R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </MotionContainer>
         <MotionContainer delay={0.05} className="organic-card">
           <p className="stat-label">Pendente</p>
-          <p className="stat-value mt-1 text-warning">R$ {totalPending.toLocaleString("pt-BR")}</p>
+          <p className={cn("stat-value mt-1", totalPending >= 0 ? "text-warning" : "text-destructive")}>
+            R$ {totalPending.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+          </p>
         </MotionContainer>
         <MotionContainer delay={0.1} className="organic-card">
-          <p className="stat-label">Barbeiros Ativos</p>
-          <p className="stat-value mt-1">{barbers.filter((b) => b.active !== false).length}</p>
+          <p className="stat-label">Adiantamentos no Mês</p>
+          <p className="stat-value mt-1 text-primary">R$ {totalAdvances.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </MotionContainer>
       </div>
 
@@ -266,6 +279,7 @@ const Payments = () => {
         </MotionContainer>
       )}
 
+      {/* New Payment Form */}
       <AnimatePresence mode="wait">
         {showForm && (
           <motion.div
@@ -295,15 +309,16 @@ const Payments = () => {
         )}
       </AnimatePresence>
 
+      {/* Barber Cards - ALL active barbers */}
       {activeBarbers.map((barber, i) => {
         const barberPayments = monthPayments.filter((p) => p.barberId === barber.id);
         const barberDisbursements = monthDisbursements.filter((p) => p.barberId === barber.id);
-        if (barberPayments.length === 0 && barberDisbursements.length === 0) return null;
         const grouped = groupPayments(barberPayments);
         const totalBarber = barberPayments.reduce((a, p) => a + p.amount, 0);
         const totalDisbursed = barberDisbursements.reduce((a, p) => a + p.amount, 0);
         const pendingBalance = paymentsStore.getBarberBalance(barber.id, selectedMonthStr);
-        const pendingCount = barberPayments.filter((p) => p.status === "pending").length;
+        const hasData = barberPayments.length > 0 || barberDisbursements.length > 0;
+
         return (
           <MotionContainer key={barber.id} delay={i * 0.05}>
             <div className="organic-card space-y-4">
@@ -315,7 +330,8 @@ const Payments = () => {
                   <div>
                     <h3 className="text-sm font-medium">{barber.name}</h3>
                     <p className="text-xs text-muted-foreground font-light">
-                      Comissão: {barber.commission}% · {barberPayments.length} lançamento{barberPayments.length > 1 ? "s" : ""}
+                      Comissão: {barber.commission}%
+                      {barberPayments.length > 0 && ` · ${barberPayments.length} lançamento${barberPayments.length > 1 ? "s" : ""}`}
                     </p>
                   </div>
                 </div>
@@ -339,55 +355,68 @@ const Payments = () => {
                     <ArrowDownLeft size={14} />
                     Adiantamento
                   </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setDetailBarber(barber)}
-                    className="organic-btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1.5"
-                  >
-                    <Eye size={14} />
-                    Detalhes
-                  </motion.button>
+                  {hasData && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setDetailBarber(barber)}
+                      className="organic-btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1.5"
+                    >
+                      <Eye size={14} />
+                      Detalhes
+                    </motion.button>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Total comissões: <span className="font-medium text-foreground">R$ {totalBarber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span></span>
-                {totalDisbursed > 0 && (
-                  <span className="text-muted-foreground">Pago/Adiant.: <span className="font-medium text-success">R$ {totalDisbursed.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span></span>
-                )}
-                <span className="text-muted-foreground">Saldo: <span className={cn("font-medium", pendingBalance > 0 ? "text-warning" : "text-success")}>R$ {pendingBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span></span>
+
+              {/* Separate pending and paid stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-2.5 rounded-lg bg-secondary/50">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Comissões</p>
+                  <p className="text-sm font-medium mt-0.5">R$ {totalBarber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-secondary/50">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Pago/Adiant.</p>
+                  <p className="text-sm font-medium text-success mt-0.5">R$ {totalDisbursed.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-secondary/50">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Pendente</p>
+                  <p className={cn("text-sm font-medium mt-0.5", pendingBalance > 0 ? "text-warning" : pendingBalance < 0 ? "text-destructive" : "text-success")}>
+                    R$ {pendingBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                {grouped.slice(0, 5).map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between py-2 border-b border-border/20 last:border-0">
-                    <p className="text-sm text-foreground truncate max-w-[60%]">{item.description}</p>
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs text-muted-foreground">{item.qty}x</span>
-                      <span className="text-sm font-medium w-24 text-right">R$ {item.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+
+              {/* Grouped items preview */}
+              {grouped.length > 0 && (
+                <div className="space-y-1">
+                  {grouped.slice(0, 5).map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-2 border-b border-border/20 last:border-0">
+                      <p className="text-sm text-foreground truncate max-w-[60%]">{item.description}</p>
+                      <div className="flex items-center gap-4">
+                        <span className="text-xs text-muted-foreground">{item.qty}x</span>
+                        <span className="text-sm font-medium w-24 text-right">R$ {item.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {grouped.length > 5 && (
-                  <button
-                    onClick={() => setDetailBarber(barber)}
-                    className="text-xs text-primary hover:underline mt-1"
-                  >
-                    +{grouped.length - 5} itens · Ver todos
-                  </button>
-                )}
-              </div>
+                  ))}
+                  {grouped.length > 5 && (
+                    <button
+                      onClick={() => setDetailBarber(barber)}
+                      className="text-xs text-primary hover:underline mt-1"
+                    >
+                      +{grouped.length - 5} itens · Ver todos
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {!hasData && (
+                <p className="text-xs text-muted-foreground text-center py-3 font-light">Nenhum lançamento neste mês</p>
+              )}
             </div>
           </MotionContainer>
         );
       })}
-
-      {monthPayments.length === 0 && (
-        <MotionContainer>
-          <div className="organic-card text-center py-12">
-            <p className="text-muted-foreground font-light">Nenhum pagamento neste mês</p>
-          </div>
-        </MotionContainer>
-      )}
 
       {/* Detail Modal */}
       <Dialog open={!!detailBarber} onOpenChange={(open) => !open && setDetailBarber(null)}>
@@ -400,23 +429,54 @@ const Payments = () => {
           <ScrollArea className="flex-1 -mx-6 px-6">
             {detailBarber && (() => {
               const bp = monthPayments.filter((p) => p.barberId === detailBarber.id);
-              const totalPaidBarber = bp.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
-              const totalPendingBarber = bp.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0);
+              const bd = monthDisbursements.filter((p) => p.barberId === detailBarber.id);
+              const totalCommissions = bp.reduce((a, p) => a + p.amount, 0);
+              const totalDisbursedDetail = bd.reduce((a, p) => a + p.amount, 0);
+              const balance = paymentsStore.getBarberBalance(detailBarber.id, selectedMonthStr);
               return (
                 <div className="space-y-4 pb-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div className="p-3 rounded-lg bg-secondary/50">
-                      <p className="text-xs text-muted-foreground">Total Pago</p>
-                      <p className="text-sm font-medium text-success">R$ {totalPaidBarber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                      <p className="text-xs text-muted-foreground">Comissões</p>
+                      <p className="text-sm font-medium">R$ {totalCommissions.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
                     </div>
                     <div className="p-3 rounded-lg bg-secondary/50">
-                      <p className="text-xs text-muted-foreground">Total Pendente</p>
-                      <p className="text-sm font-medium text-warning">R$ {totalPendingBarber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                      <p className="text-xs text-muted-foreground">Pago/Adiant.</p>
+                      <p className="text-sm font-medium text-success">R$ {totalDisbursedDetail.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-secondary/50">
+                      <p className="text-xs text-muted-foreground">Saldo</p>
+                      <p className={cn("text-sm font-medium", balance > 0 ? "text-warning" : balance < 0 ? "text-destructive" : "text-success")}>
+                        R$ {balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </p>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    {bp.map((payment) => (
-                      <div key={payment.id} className="flex items-center justify-between py-3 border-b border-border/30 last:border-0">
+
+                  {/* Disbursements */}
+                  {bd.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Pagamentos e Adiantamentos</p>
+                      {bd.map((payment) => (
+                        <div key={payment.id} className="flex items-center justify-between py-2.5 border-b border-border/30 last:border-0">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">
+                              {payment.type === "advance" ? "Adiantamento" : "Pagamento"}{payment.description ? ` — ${payment.description}` : ""}
+                            </p>
+                            <p className="text-xs text-muted-foreground font-light">
+                              {payment.date ? new Date(payment.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
+                            </p>
+                          </div>
+                          <span className="text-sm font-medium text-success ml-3">- R$ {payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Commissions */}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Comissões</p>
+                    {bp.length > 0 ? bp.map((payment) => (
+                      <div key={payment.id} className="flex items-center justify-between py-2.5 border-b border-border/30 last:border-0">
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{payment.description}</p>
                           <p className="text-xs text-muted-foreground font-light">
@@ -425,23 +485,16 @@ const Payments = () => {
                         </div>
                         <div className="flex items-center gap-3 ml-3 shrink-0">
                           <span className="text-sm font-medium">R$ {payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                          {payment.status === "pending" ? (
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => paymentsStore.markPaid(payment.id)}
-                              className="organic-btn-secondary !py-1.5 !px-3 text-xs"
-                            >
-                              Pagar
-                            </motion.button>
-                          ) : (
+                          {payment.status === "paid" && (
                             <span className="text-xs text-success flex items-center gap-1">
                               <CheckCircle2 size={14} /> Pago
                             </span>
                           )}
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <p className="text-xs text-muted-foreground text-center py-3 font-light">Nenhuma comissão neste mês</p>
+                    )}
                   </div>
                 </div>
               );
@@ -457,7 +510,7 @@ const Payments = () => {
           onClose={() => setPaymentModal(null)}
           barber={paymentModal.barber}
           type={paymentModal.type}
-          maxAmount={paymentsStore.getBarberBalance(paymentModal.barber.id, selectedMonthStr)}
+          maxAmount={paymentModal.type === "advance" ? undefined : Math.max(0, paymentsStore.getBarberBalance(paymentModal.barber.id, selectedMonthStr))}
           monthStr={selectedMonthStr}
         />
       )}
