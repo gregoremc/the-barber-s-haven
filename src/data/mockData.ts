@@ -22,13 +22,7 @@ export const mockBarbers: Barber[] = [
   { id: "3", name: "Rafael Lima", cpfCnpj: "456.789.123-00", address: "Rua Augusta, 200 - SP", phone: "(11) 99999-3333", commission: 50, attachments: [] },
 ];
 
-export const mockAppointments: Appointment[] = [
-  { id: "1", barberId: "1", clientName: "João Pedro", serviceId: "1", date: "2026-03-02", time: "09:00", status: "scheduled" },
-  { id: "2", barberId: "2", clientName: "Marcos Oliveira", serviceId: "3", date: "2026-03-02", time: "10:00", status: "scheduled" },
-  { id: "3", barberId: "1", clientName: "Lucas Mendes", serviceId: "2", date: "2026-03-02", time: "11:00", status: "completed" },
-  { id: "4", barberId: "3", clientName: "Felipe Costa", serviceId: "1", date: "2026-03-02", time: "14:00", status: "scheduled" },
-  { id: "5", barberId: "2", clientName: "Bruno Alves", serviceId: "4", date: "2026-03-03", time: "09:30", status: "scheduled" },
-];
+export const mockAppointments: Appointment[] = [];
 
 export const mockBarberPayments: BarberPayment[] = [];
 
