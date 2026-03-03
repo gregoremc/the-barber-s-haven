@@ -217,7 +217,7 @@ const Dashboard = () => {
           className="organic-btn-secondary flex items-center gap-2"
         >
           <ShoppingCart size={16} />
-          Registrar Venda
+          Registrar Venda De Produto
         </motion.button>
       </div>
 
