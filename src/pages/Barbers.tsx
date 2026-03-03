@@ -2,15 +2,17 @@ import { useState, useRef, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Edit2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus, Power } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
-import { mockAppointments, mockServices, mockProducts } from "@/data/mockData";
+import { mockServices, mockProducts } from "@/data/mockData";
 import { Barber, BarberAttachment } from "@/types/barbershop";
 import { barbersStore } from "@/data/barbersStore";
+import { appointmentsStore } from "@/data/appointmentsStore";
 import { paymentsStore } from "@/data/paymentsStore";
 import { toast } from "sonner";
 
 const Barbers = () => {
   const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
   const allPayments = useSyncExternalStore(paymentsStore.subscribe, paymentsStore.getPayments);
+  const allAppointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
@@ -96,7 +98,7 @@ const Barbers = () => {
     const targetYear = now.getFullYear() + Math.floor(targetMonth / 12);
     const normalizedMonth = ((targetMonth % 12) + 12) % 12;
 
-    const barberApts = mockAppointments.filter((a) => {
+    const barberApts = allAppointments.filter((a) => {
       if (a.barberId !== barberId || a.status !== "completed") return false;
       const d = new Date(a.date + "T12:00:00");
       return d.getMonth() === normalizedMonth && d.getFullYear() === targetYear;
@@ -140,7 +142,7 @@ const Barbers = () => {
     const barber = barbers.find((b) => b.id === barberId);
     if (!barber) return 0;
     const now = new Date();
-    const barberApts = mockAppointments.filter((a) => {
+    const barberApts = allAppointments.filter((a) => {
       if (a.barberId !== barberId || a.status !== "completed") return false;
       const d = new Date(a.date + "T12:00:00");
       return d <= now;
@@ -375,7 +377,7 @@ const Barbers = () => {
                 <div className="organic-card text-center">
                   <p className="stat-label">Atendimentos Concluídos</p>
                   <p className="stat-value">
-                    {mockAppointments.filter((a) => a.barberId === selectedBarberId && a.status === "completed").length}
+                    {allAppointments.filter((a) => a.barberId === selectedBarberId && a.status === "completed").length}
                   </p>
                 </div>
               </MotionContainer>
