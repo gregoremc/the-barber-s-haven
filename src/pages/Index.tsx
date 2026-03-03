@@ -106,9 +106,10 @@ const Dashboard = () => {
     (a) => a.date === today && a.status === "scheduled"
   ).length;
 
-  const todayCompleted = appointments.filter(
+  const todayCompletedList = appointments.filter(
     (a) => a.date === today && a.status === "completed"
-  ).length;
+  );
+  const todayCompleted = todayCompletedList.length;
 
   const pendingBills = mockBills.filter((b) => b.status !== "paid").reduce(
     (acc, b) => acc + b.amount,
@@ -296,6 +297,45 @@ const Dashboard = () => {
           </MotionContainer>
         )}
       </div>
+
+      {/* Completed today */}
+      {todayCompletedList.length > 0 && (
+        <div>
+          <h2 className="section-title mb-4">Concluídos Hoje</h2>
+          <MotionContainer delay={0.3}>
+            <div className="organic-card space-y-3">
+              {todayCompletedList.map((apt) => {
+                const barber = barbers.find((b) => b.id === apt.barberId);
+                const barberFirstName = barber?.name.split(" ")[0] || "—";
+                const serviceIds = apt.serviceIds?.length ? apt.serviceIds : [apt.serviceId];
+                const totalValue = serviceIds.reduce((acc, sid) => {
+                  const svc = services.find((s) => s.id === sid);
+                  return acc + (svc?.price || 0);
+                }, 0);
+                const svcNames = serviceIds.map((sid) => services.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+                return (
+                  <div key={apt.id} className="flex items-center justify-between py-2 border-b border-border/40 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{apt.clientName}</p>
+                      <p className="text-xs text-muted-foreground">{svcNames} · {barberFirstName}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-primary">R$ {totalValue.toFixed(2)}</span>
+                  </div>
+                );
+              })}
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <span className="text-sm font-semibold">Total</span>
+                <span className="text-sm font-bold text-primary">
+                  R$ {todayCompletedList.reduce((acc, apt) => {
+                    const sids = apt.serviceIds?.length ? apt.serviceIds : [apt.serviceId];
+                    return acc + sids.reduce((s, sid) => s + (services.find((sv) => sv.id === sid)?.price || 0), 0);
+                  }, 0).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </MotionContainer>
+        </div>
+      )}
 
       {/* Sale modal */}
       <AnimatePresence>
