@@ -82,6 +82,7 @@ export interface BarberPayment {
   date: string;
   description: string;
   status: 'pending' | 'paid';
+  type?: 'commission' | 'payment' | 'advance'; // defaults to 'commission'
 }
 
 export interface BillAttachment {

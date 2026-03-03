@@ -1,6 +1,6 @@
 import { useSyncExternalStore, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Users, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Plus, Users, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, Eye, DollarSign, ArrowDownLeft } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { paymentsStore } from "@/data/paymentsStore";
 import { barbersStore } from "@/data/barbersStore";
@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import BarberPaymentModal from "@/components/BarberPaymentModal";
 
 type GroupedItem = {
   description: string;
@@ -65,6 +66,7 @@ const Payments = () => {
   const [form, setForm] = useState({ barberId: "", amount: "", date: "", description: "" });
   const [selectedMonth, setSelectedMonth] = useState(() => new Date());
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+  const [paymentModal, setPaymentModal] = useState<{ barber: Barber; type: "payment" | "advance" } | null>(null);
 
   const selectedMonthStr = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
 
@@ -89,6 +91,15 @@ const Payments = () => {
   const monthPayments = useMemo(() => {
     return payments.filter((p) => {
       if (!p.date) return false;
+      if (p.type === "payment" || p.type === "advance") return false;
+      return p.date.substring(0, 7) === selectedMonthStr;
+    });
+  }, [payments, selectedMonthStr]);
+
+  const monthDisbursements = useMemo(() => {
+    return payments.filter((p) => {
+      if (!p.date) return false;
+      if (p.type !== "payment" && p.type !== "advance") return false;
       return p.date.substring(0, 7) === selectedMonthStr;
     });
   }, [payments, selectedMonthStr]);
@@ -286,14 +297,17 @@ const Payments = () => {
 
       {activeBarbers.map((barber, i) => {
         const barberPayments = monthPayments.filter((p) => p.barberId === barber.id);
-        if (barberPayments.length === 0) return null;
+        const barberDisbursements = monthDisbursements.filter((p) => p.barberId === barber.id);
+        if (barberPayments.length === 0 && barberDisbursements.length === 0) return null;
         const grouped = groupPayments(barberPayments);
         const totalBarber = barberPayments.reduce((a, p) => a + p.amount, 0);
+        const totalDisbursed = barberDisbursements.reduce((a, p) => a + p.amount, 0);
+        const pendingBalance = paymentsStore.getBarberBalance(barber.id, selectedMonthStr);
         const pendingCount = barberPayments.filter((p) => p.status === "pending").length;
         return (
           <MotionContainer key={barber.id} delay={i * 0.05}>
             <div className="organic-card space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
                     <Users size={18} strokeWidth={1.5} className="text-muted-foreground" />
@@ -305,13 +319,26 @@ const Payments = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="text-sm font-medium">R$ {totalBarber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-                    {pendingCount > 0 && (
-                      <p className="text-xs text-warning">{pendingCount} pendente{pendingCount > 1 ? "s" : ""}</p>
-                    )}
-                  </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setPaymentModal({ barber, type: "payment" })}
+                    disabled={pendingBalance <= 0}
+                    className="organic-btn-primary !py-1.5 !px-3 text-xs flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <DollarSign size={14} />
+                    Pagar
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setPaymentModal({ barber, type: "advance" })}
+                    className="organic-btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1.5"
+                  >
+                    <ArrowDownLeft size={14} />
+                    Adiantamento
+                  </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -322,6 +349,13 @@ const Payments = () => {
                     Detalhes
                   </motion.button>
                 </div>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Total comissões: <span className="font-medium text-foreground">R$ {totalBarber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span></span>
+                {totalDisbursed > 0 && (
+                  <span className="text-muted-foreground">Pago/Adiant.: <span className="font-medium text-success">R$ {totalDisbursed.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span></span>
+                )}
+                <span className="text-muted-foreground">Saldo: <span className={cn("font-medium", pendingBalance > 0 ? "text-warning" : "text-success")}>R$ {pendingBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span></span>
               </div>
               <div className="space-y-1">
                 {grouped.slice(0, 5).map((item, idx) => (
@@ -415,6 +449,18 @@ const Payments = () => {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      {/* Payment / Advance Modal */}
+      {paymentModal && (
+        <BarberPaymentModal
+          open={!!paymentModal}
+          onClose={() => setPaymentModal(null)}
+          barber={paymentModal.barber}
+          type={paymentModal.type}
+          maxAmount={paymentsStore.getBarberBalance(paymentModal.barber.id, selectedMonthStr)}
+          monthStr={selectedMonthStr}
+        />
+      )}
     </div>
   );
 };
