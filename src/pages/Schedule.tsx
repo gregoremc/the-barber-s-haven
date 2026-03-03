@@ -8,6 +8,7 @@ import { barbersStore } from "@/data/barbersStore";
 import { appointmentsStore } from "@/data/appointmentsStore";
 import { Appointment } from "@/types/barbershop";
 import { paymentsStore } from "@/data/paymentsStore";
+import { revenueStore } from "@/data/revenueStore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -71,9 +72,19 @@ const Schedule = () => {
       const svc = mockServices.find((s) => s.id === sid);
       return acc + (svc?.price || 0);
     }, 0);
+
+    // Record service revenue
+    const svcNames = serviceIds.map((sid) => mockServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+    revenueStore.addEntry({
+      id: String(Date.now()) + Math.random().toString(36).slice(2),
+      type: "service",
+      amount: totalServices,
+      date,
+      description: svcNames,
+    });
+
     const commissionAmount = totalServices * (barber.commission / 100);
     if (commissionAmount <= 0) return;
-    const svcNames = serviceIds.map((sid) => mockServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
     paymentsStore.addPayment({
       id: String(Date.now()) + Math.random().toString(36).slice(2),
       barberId,

@@ -3,6 +3,7 @@ import {
   DollarSign,
   CalendarDays,
   TrendingUp,
+  CheckCircle2,
 } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import MotionContainer from "@/components/MotionContainer";
@@ -10,6 +11,9 @@ import { mockBills } from "@/data/mockData";
 import { appointmentsStore } from "@/data/appointmentsStore";
 import { barbersStore } from "@/data/barbersStore";
 import { servicesStore } from "@/data/servicesStore";
+import { paymentsStore } from "@/data/paymentsStore";
+import { revenueStore } from "@/data/revenueStore";
+
 const HIDDEN_KEY = "dashboard_hidden_cards";
 
 const getHidden = (): Record<string, boolean> => {
@@ -25,6 +29,7 @@ const Dashboard = () => {
   const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
   const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
   const services = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
+  useSyncExternalStore(revenueStore.subscribe, revenueStore.getEntries);
 
   const toggle = (key: string) => {
     setHiddenCards((prev) => {
@@ -35,6 +40,7 @@ const Dashboard = () => {
   };
 
   const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
 
   const todayAppointments = appointments.filter(
     (a) => a.date === today && a.status === "scheduled"
@@ -49,9 +55,9 @@ const Dashboard = () => {
     0
   );
 
-  const monthRevenue = 12450;
+  // Real monthly revenue from revenueStore
+  const monthRevenue = revenueStore.getMonthRevenue(now.getFullYear(), now.getMonth());
 
-  // Today's scheduled appointments grouped by barber
   const todayScheduled = appointments.filter(
     (a) => a.date === today && a.status === "scheduled"
   );
@@ -65,6 +71,45 @@ const Dashboard = () => {
     }))
     .filter((g) => g.appointments.length > 0);
 
+  const handleComplete = (aptId: string) => {
+    const apt = appointments.find((a) => a.id === aptId);
+    if (!apt) return;
+
+    // Record revenue
+    const serviceIds = apt.serviceIds?.length ? apt.serviceIds : [apt.serviceId];
+    const totalServices = serviceIds.reduce((acc, sid) => {
+      const svc = services.find((s) => s.id === sid);
+      return acc + (svc?.price || 0);
+    }, 0);
+    const svcNames = serviceIds.map((sid) => services.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+
+    revenueStore.addEntry({
+      id: String(Date.now()) + Math.random().toString(36).slice(2),
+      type: "service",
+      amount: totalServices,
+      date: apt.date,
+      description: svcNames,
+    });
+
+    // Generate commission payment
+    const barber = barbers.find((b) => b.id === apt.barberId);
+    if (barber) {
+      const commissionAmount = totalServices * (barber.commission / 100);
+      if (commissionAmount > 0) {
+        paymentsStore.addPayment({
+          id: String(Date.now()) + Math.random().toString(36).slice(2),
+          barberId: barber.id,
+          amount: commissionAmount,
+          date: apt.date,
+          description: `Comissão: ${svcNames}`,
+          status: "pending",
+        });
+      }
+    }
+
+    appointmentsStore.updateStatus(aptId, "completed");
+  };
+
   return (
     <div className="space-y-10">
       <div>
@@ -77,10 +122,10 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         <StatCard
           label="Receita do Mês"
-          value={`R$ ${monthRevenue.toLocaleString("pt-BR")}`}
+          value={`R$ ${monthRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
           icon={DollarSign}
-          trend="+12% vs mês anterior"
-          trendUp
+          trend="Serviços concluídos + vendas"
+          trendUp={monthRevenue > 0}
           delay={0}
           hideable
           hidden={!!hiddenCards.revenue}
@@ -133,9 +178,19 @@ const Dashboard = () => {
                             {serviceNames} · {apt.time}
                           </p>
                         </div>
-                        <span className="text-xs bg-secondary px-3 py-1 rounded-full text-muted-foreground">
-                          {apt.time}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs bg-secondary px-3 py-1 rounded-full text-muted-foreground">
+                            {apt.time}
+                          </span>
+                          <button
+                            onClick={() => handleComplete(apt.id)}
+                            className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
+                            title="Marcar como concluído"
+                          >
+                            <CheckCircle2 size={14} />
+                            Concluído
+                          </button>
+                        </div>
                       </div>
                     );
                   })}

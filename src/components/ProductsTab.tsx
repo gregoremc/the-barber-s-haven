@@ -7,6 +7,7 @@ import { productsStore } from "@/data/productsStore";
 import { suppliersStore } from "@/data/suppliersStore";
 import { barbersStore } from "@/data/barbersStore";
 import { paymentsStore } from "@/data/paymentsStore";
+import { revenueStore } from "@/data/revenueStore";
 import { Product } from "@/types/barbershop";
 import { trashStore } from "@/data/trashStore";
 import { toast } from "@/hooks/use-toast";
@@ -127,6 +128,14 @@ const ProductsTab = ({ onRegisterRestore }: ProductsTabProps) => {
     }
     productsStore.updateProduct(product.id, { stock: product.stock - qty });
     const totalSaleValue = product.sellPrice * qty;
+    // Record revenue
+    revenueStore.addEntry({
+      id: String(Date.now()) + Math.random().toString(36).slice(2),
+      type: "product",
+      amount: totalSaleValue,
+      date: new Date().toISOString().split("T")[0],
+      description: `${qty}x ${product.name}`,
+    });
     if (saleSeller !== "establishment") {
       const barber = activeBarbers.find((b) => b.id === saleSeller);
       if (barber) {
