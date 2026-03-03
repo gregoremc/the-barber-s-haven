@@ -6,6 +6,8 @@ export interface Product {
   sellPrice: number;
   stock: number;
   commission: number; // percentage for seller
+  supplierId: string; // linked supplier
+  supplierDebt: number; // amount still owed to supplier
 }
 
 export interface SupplierCustomField {
