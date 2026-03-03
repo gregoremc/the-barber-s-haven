@@ -1,10 +1,12 @@
 import { useState, useSyncExternalStore } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   DollarSign,
   CalendarDays,
   TrendingUp,
   CheckCircle2,
   ShoppingCart,
+  Plus,
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +32,7 @@ const getHidden = (): Record<string, boolean> => {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [hiddenCards, setHiddenCards] = useState<Record<string, boolean>>(getHidden);
   const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
   const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
@@ -207,8 +210,19 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="section-title">Agendamentos de Hoje</h2>
+        <div className="flex items-center gap-3">
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          onClick={() => navigate("/schedule")}
+          className="organic-btn-primary flex items-center gap-2"
+        >
+          <Plus size={16} />
+          + Novo Agendamento
+        </motion.button>
         <motion.button
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
@@ -219,6 +233,7 @@ const Dashboard = () => {
           <ShoppingCart size={16} />
           Registrar Venda De Produto
         </motion.button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
