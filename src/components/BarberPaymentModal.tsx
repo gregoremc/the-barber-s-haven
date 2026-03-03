@@ -12,7 +12,7 @@ interface Props {
   onClose: () => void;
   barber: Barber;
   type: "payment" | "advance";
-  maxAmount: number; // max payable for payments
+  maxAmount?: number; // max payable for payments, undefined for advances
   monthStr: string;
 }
 
@@ -23,7 +23,7 @@ const BarberPaymentModal = ({ open, onClose, barber, type, maxAmount, monthStr }
   const title = type === "payment" ? "Fazer Pagamento" : "Adiantamento";
   const numAmount = Number(amount);
   const isValid = numAmount > 0 && date;
-  const isOverLimit = type === "payment" && numAmount > maxAmount;
+  const isOverLimit = type === "payment" && maxAmount !== undefined && numAmount > maxAmount;
 
   const handleConfirm = () => {
     if (!isValid || isOverLimit) return;
