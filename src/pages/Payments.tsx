@@ -1,12 +1,35 @@
 import { useSyncExternalStore, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Users, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Users, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { paymentsStore } from "@/data/paymentsStore";
 import { barbersStore } from "@/data/barbersStore";
-import { Barber } from "@/types/barbershop";
+import { Barber, BarberPayment } from "@/types/barbershop";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+
+type GroupedItem = {
+  description: string;
+  qty: number;
+  total: number;
+};
+
+const groupPayments = (payments: BarberPayment[]): GroupedItem[] => {
+  const map = new Map<string, GroupedItem>();
+  payments.forEach((p) => {
+    const key = p.description || "Outros";
+    const existing = map.get(key);
+    if (existing) {
+      existing.qty += 1;
+      existing.total += p.amount;
+    } else {
+      map.set(key, { description: key, qty: 1, total: p.amount });
+    }
+  });
+  return Array.from(map.values()).sort((a, b) => b.total - a.total);
+};
 
 const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -37,6 +60,7 @@ const getPaymentAlerts = (barbersList: Barber[]) => {
 const Payments = () => {
   const payments = useSyncExternalStore(paymentsStore.subscribe, paymentsStore.getPayments);
   const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
+  const [detailBarber, setDetailBarber] = useState<Barber | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ barberId: "", amount: "", date: "", description: "" });
   const [selectedMonth, setSelectedMonth] = useState(() => new Date());
@@ -263,46 +287,60 @@ const Payments = () => {
       {activeBarbers.map((barber, i) => {
         const barberPayments = monthPayments.filter((p) => p.barberId === barber.id);
         if (barberPayments.length === 0) return null;
+        const grouped = groupPayments(barberPayments);
+        const totalBarber = barberPayments.reduce((a, p) => a + p.amount, 0);
+        const pendingCount = barberPayments.filter((p) => p.status === "pending").length;
         return (
           <MotionContainer key={barber.id} delay={i * 0.05}>
             <div className="organic-card space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                  <Users size={18} strokeWidth={1.5} className="text-muted-foreground" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                    <Users size={18} strokeWidth={1.5} className="text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">{barber.name}</h3>
+                    <p className="text-xs text-muted-foreground font-light">
+                      Comissão: {barber.commission}% · {barberPayments.length} lançamento{barberPayments.length > 1 ? "s" : ""}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-medium">{barber.name}</h3>
-                  <p className="text-xs text-muted-foreground font-light">Comissão: {barber.commission}%</p>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-sm font-medium">R$ {totalBarber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                    {pendingCount > 0 && (
+                      <p className="text-xs text-warning">{pendingCount} pendente{pendingCount > 1 ? "s" : ""}</p>
+                    )}
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setDetailBarber(barber)}
+                    className="organic-btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1.5"
+                  >
+                    <Eye size={14} />
+                    Detalhes
+                  </motion.button>
                 </div>
               </div>
-              <div className="space-y-2">
-                {barberPayments.map((payment) => (
-                  <div key={payment.id} className="flex items-center justify-between py-3 border-b border-border/30 last:border-0">
-                    <div>
-                      <p className="text-sm font-medium">{payment.description}</p>
-                      <p className="text-xs text-muted-foreground font-light">
-                        {payment.date ? new Date(payment.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium">R$ {payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                      {payment.status === "pending" ? (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => paymentsStore.markPaid(payment.id)}
-                          className="organic-btn-secondary !py-1.5 !px-4 text-xs"
-                        >
-                          Marcar Pago
-                        </motion.button>
-                      ) : (
-                        <span className="text-xs text-success flex items-center gap-1">
-                          <CheckCircle2 size={14} /> Pago
-                        </span>
-                      )}
+              <div className="space-y-1">
+                {grouped.slice(0, 5).map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2 border-b border-border/20 last:border-0">
+                    <p className="text-sm text-foreground truncate max-w-[60%]">{item.description}</p>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-muted-foreground">{item.qty}x</span>
+                      <span className="text-sm font-medium w-24 text-right">R$ {item.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 ))}
+                {grouped.length > 5 && (
+                  <button
+                    onClick={() => setDetailBarber(barber)}
+                    className="text-xs text-primary hover:underline mt-1"
+                  >
+                    +{grouped.length - 5} itens · Ver todos
+                  </button>
+                )}
               </div>
             </div>
           </MotionContainer>
@@ -316,6 +354,67 @@ const Payments = () => {
           </div>
         </MotionContainer>
       )}
+
+      {/* Detail Modal */}
+      <Dialog open={!!detailBarber} onOpenChange={(open) => !open && setDetailBarber(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              {detailBarber?.name} — {formatMonthLabel(selectedMonth)}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            {detailBarber && (() => {
+              const bp = monthPayments.filter((p) => p.barberId === detailBarber.id);
+              const totalPaidBarber = bp.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
+              const totalPendingBarber = bp.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0);
+              return (
+                <div className="space-y-4 pb-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-secondary/50">
+                      <p className="text-xs text-muted-foreground">Total Pago</p>
+                      <p className="text-sm font-medium text-success">R$ {totalPaidBarber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-secondary/50">
+                      <p className="text-xs text-muted-foreground">Total Pendente</p>
+                      <p className="text-sm font-medium text-warning">R$ {totalPendingBarber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    {bp.map((payment) => (
+                      <div key={payment.id} className="flex items-center justify-between py-3 border-b border-border/30 last:border-0">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{payment.description}</p>
+                          <p className="text-xs text-muted-foreground font-light">
+                            {payment.date ? new Date(payment.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 ml-3 shrink-0">
+                          <span className="text-sm font-medium">R$ {payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                          {payment.status === "pending" ? (
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => paymentsStore.markPaid(payment.id)}
+                              className="organic-btn-secondary !py-1.5 !px-3 text-xs"
+                            >
+                              Pagar
+                            </motion.button>
+                          ) : (
+                            <span className="text-xs text-success flex items-center gap-1">
+                              <CheckCircle2 size={14} /> Pago
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
