@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   DollarSign,
-  Scissors,
   CalendarDays,
   TrendingUp,
-  Users,
 } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import MotionContainer from "@/components/MotionContainer";
-import { mockAppointments, mockServices, mockBills } from "@/data/mockData";
-
+import { mockBills } from "@/data/mockData";
+import { appointmentsStore } from "@/data/appointmentsStore";
+import { barbersStore } from "@/data/barbersStore";
+import { servicesStore } from "@/data/servicesStore";
 const HIDDEN_KEY = "dashboard_hidden_cards";
 
 const getHidden = (): Record<string, boolean> => {
@@ -22,6 +22,9 @@ const getHidden = (): Record<string, boolean> => {
 
 const Dashboard = () => {
   const [hiddenCards, setHiddenCards] = useState<Record<string, boolean>>(getHidden);
+  const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
+  const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
+  const services = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
 
   const toggle = (key: string) => {
     setHiddenCards((prev) => {
@@ -31,14 +34,15 @@ const Dashboard = () => {
     });
   };
 
-  const todayAppointments = mockAppointments.filter(
-    (a) => a.date === "2026-03-02" && a.status === "scheduled"
+  const today = new Date().toISOString().slice(0, 10);
+
+  const todayAppointments = appointments.filter(
+    (a) => a.date === today && a.status === "scheduled"
   ).length;
 
-  const todayCompleted = mockAppointments.filter(
-    (a) => a.date === "2026-03-02" && a.status === "completed"
+  const todayCompleted = appointments.filter(
+    (a) => a.date === today && a.status === "completed"
   ).length;
-
 
   const pendingBills = mockBills.filter((b) => b.status !== "paid").reduce(
     (acc, b) => acc + b.amount,
@@ -46,6 +50,20 @@ const Dashboard = () => {
   );
 
   const monthRevenue = 12450;
+
+  // Today's scheduled appointments grouped by barber
+  const todayScheduled = appointments.filter(
+    (a) => a.date === today && a.status === "scheduled"
+  );
+
+  const barberGroups = barbers
+    .map((barber) => ({
+      barber,
+      appointments: todayScheduled
+        .filter((a) => a.barberId === barber.id)
+        .sort((a, b) => a.time.localeCompare(b.time)),
+    }))
+    .filter((g) => g.appointments.length > 0);
 
   return (
     <div className="space-y-10">
@@ -89,65 +107,53 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MotionContainer delay={0.2}>
-          <div className="organic-card space-y-4">
-            <h2 className="section-title flex items-center gap-2">
-              <CalendarDays size={18} strokeWidth={1.5} />
-              Próximos Agendamentos
-            </h2>
-            <div className="space-y-3">
-              {mockAppointments
-                .filter((a) => a.status === "scheduled")
-                .slice(0, 4)
-                .map((apt) => {
-                  const service = mockServices.find((s) => s.id === apt.serviceId);
-                  return (
-                    <div
-                      key={apt.id}
-                      className="flex items-center justify-between py-3 border-b border-border/40 last:border-0"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{apt.clientName}</p>
-                        <p className="text-xs text-muted-foreground font-light">
-                          {service?.name} · {apt.time}
-                        </p>
+        {barberGroups.length > 0 ? (
+          barberGroups.map((group, i) => (
+            <MotionContainer key={group.barber.id} delay={0.2 + i * 0.05}>
+              <div className="organic-card space-y-4">
+                <h2 className="section-title flex items-center gap-2">
+                  <CalendarDays size={18} strokeWidth={1.5} />
+                  {group.barber.name}
+                </h2>
+                <div className="space-y-3">
+                  {group.appointments.map((apt) => {
+                    const serviceIds = apt.serviceIds?.length ? apt.serviceIds : [apt.serviceId];
+                    const serviceNames = serviceIds
+                      .map((sid) => services.find((s) => s.id === sid)?.name)
+                      .filter(Boolean)
+                      .join(", ");
+                    return (
+                      <div
+                        key={apt.id}
+                        className="flex items-center justify-between py-3 border-b border-border/40 last:border-0"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">{apt.clientName}</p>
+                          <p className="text-xs text-muted-foreground font-light">
+                            {serviceNames} · {apt.time}
+                          </p>
+                        </div>
+                        <span className="text-xs bg-secondary px-3 py-1 rounded-full text-muted-foreground">
+                          {apt.time}
+                        </span>
                       </div>
-                      <span className="text-xs bg-secondary px-3 py-1 rounded-full text-muted-foreground">
-                        {apt.date === "2026-03-02" ? "Hoje" : apt.date}
-                      </span>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        </MotionContainer>
-
-        <MotionContainer delay={0.25}>
-          <div className="organic-card space-y-4">
-            <h2 className="section-title flex items-center gap-2">
-              <Scissors size={18} strokeWidth={1.5} />
-              Serviços Populares
-            </h2>
-            <div className="space-y-3">
-              {mockServices.slice(0, 4).map((service) => (
-                <div
-                  key={service.id}
-                  className="flex items-center justify-between py-3 border-b border-border/40 last:border-0"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{service.name}</p>
-                    <p className="text-xs text-muted-foreground font-light">
-                      {service.duration} min
-                    </p>
-                  </div>
-                  <span className="text-sm font-medium">
-                    R$ {service.price.toFixed(2)}
-                  </span>
+                    );
+                  })}
                 </div>
-              ))}
+              </div>
+            </MotionContainer>
+          ))
+        ) : (
+          <MotionContainer delay={0.2}>
+            <div className="organic-card space-y-4">
+              <h2 className="section-title flex items-center gap-2">
+                <CalendarDays size={18} strokeWidth={1.5} />
+                Agendamentos de Hoje
+              </h2>
+              <p className="text-sm text-muted-foreground">Nenhum agendamento para hoje.</p>
             </div>
-          </div>
-        </MotionContainer>
+          </MotionContainer>
+        )}
       </div>
     </div>
   );
