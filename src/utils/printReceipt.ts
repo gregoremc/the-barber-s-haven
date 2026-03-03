@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface ReceiptData {
   type: "payment" | "advance";
@@ -8,115 +9,73 @@ interface ReceiptData {
   date: string;
 }
 
-export const printReceipt = (data: ReceiptData) => {
+export const printReceipt = async (data: ReceiptData) => {
   const title = data.type === "payment" ? "COMPROVANTE DE PAGAMENTO" : "COMPROVANTE DE ADIANTAMENTO";
   const formattedAmount = `R$ ${data.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
   const formattedDate = new Date(data.date + "T12:00:00").toLocaleDateString("pt-BR");
   const now = new Date().toLocaleString("pt-BR");
 
-  // 50mm width ≈ 141.73 points
-  const pageWidth = 141.73;
-  const doc = new jsPDF({ unit: "pt", format: [pageWidth, 400] });
-  const cx = pageWidth / 2;
-  const margin = 8;
-  let y = 12;
+  // Create off-screen container
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.left = "-9999px";
+  container.style.top = "0";
+  container.style.width = "190px"; // ~50mm at 96dpi
+  container.style.background = "#fff";
+  container.style.padding = "8px";
+  container.style.fontFamily = "'Courier New', monospace";
+  container.style.fontSize = "10px";
+  container.style.color = "#000";
 
-  const drawDashedLine = (yPos: number) => {
-    doc.setLineDashPattern([2, 2], 0);
-    doc.setLineWidth(0.5);
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    doc.setLineDashPattern([], 0);
-  };
+  container.innerHTML = `
+    <div style="text-align:center;font-weight:bold;font-size:11px;margin-bottom:4px">${data.shopName}</div>
+    <div style="border-top:1px dashed #000;margin:6px 0"></div>
+    <div style="text-align:center;font-weight:bold;font-size:10px;margin-bottom:4px">${title}</div>
+    <div style="border-top:1px dashed #000;margin:6px 0"></div>
+    <div style="margin:4px 0">
+      <span>Profissional:</span><br/>
+      <strong>${data.barberName}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin:6px 0">
+      <span>Data:</span>
+      <strong>${formattedDate}</strong>
+    </div>
+    <div style="border-top:1px dashed #000;margin:6px 0"></div>
+    <div style="text-align:center;font-size:8px">Valor ${data.type === "advance" ? "do Adiantamento" : "Pago"}</div>
+    <div style="text-align:center;font-weight:bold;font-size:14px;margin:6px 0">${formattedAmount}</div>
+    <div style="border-top:1px dashed #000;margin:6px 0"></div>
+    <div style="margin-top:30px">
+      <div style="border-top:1px solid #000;padding-top:2px;text-align:center;font-size:8px">
+        ${data.barberName}<br/>Profissional
+      </div>
+    </div>
+    <div style="margin-top:24px">
+      <div style="border-top:1px solid #000;padding-top:2px;text-align:center;font-size:8px">
+        Responsavel<br/>${data.shopName}
+      </div>
+    </div>
+    <div style="border-top:1px dashed #000;margin:12px 0 4px"></div>
+    <div style="text-align:center;font-size:7px">Documento gerado em<br/>${now}</div>
+  `;
 
-  // Shop name
-  doc.setFont("courier", "bold");
-  doc.setFontSize(10);
-  doc.text(data.shopName, cx, y, { align: "center" });
-  y += 10;
+  document.body.appendChild(container);
 
-  drawDashedLine(y);
-  y += 8;
+  try {
+    const canvas = await html2canvas(container, { scale: 3, useCORS: true, logging: false });
+    const imgData = canvas.toDataURL("image/png");
+    const pxWidth = canvas.width;
+    const pxHeight = canvas.height;
 
-  // Title
-  doc.setFontSize(9);
-  doc.text(title, cx, y, { align: "center" });
-  y += 8;
+    // 50mm wide
+    const pdfWidth = 50;
+    const pdfHeight = (pxHeight * pdfWidth) / pxWidth;
 
-  drawDashedLine(y);
-  y += 10;
+    const doc = new jsPDF({ unit: "mm", format: [pdfWidth, pdfHeight + 4] });
+    doc.addImage(imgData, "PNG", 0, 2, pdfWidth, pdfHeight);
 
-  // Barber
-  doc.setFont("courier", "normal");
-  doc.setFontSize(8);
-  doc.text("Profissional:", margin, y);
-  y += 8;
-  doc.setFont("courier", "bold");
-  doc.setFontSize(9);
-  doc.text(data.barberName, margin, y);
-  y += 10;
-
-  // Date
-  doc.setFont("courier", "normal");
-  doc.setFontSize(8);
-  doc.text("Data:", margin, y);
-  doc.setFont("courier", "bold");
-  doc.text(formattedDate, pageWidth - margin, y, { align: "right" });
-  y += 8;
-
-  drawDashedLine(y);
-  y += 8;
-
-  // Amount label
-  doc.setFont("courier", "normal");
-  doc.setFontSize(7);
-  const amountLabel = data.type === "advance" ? "Valor do Adiantamento" : "Valor Pago";
-  doc.text(amountLabel, cx, y, { align: "center" });
-  y += 10;
-
-  // Amount value
-  doc.setFont("courier", "bold");
-  doc.setFontSize(13);
-  doc.text(formattedAmount, cx, y, { align: "center" });
-  y += 10;
-
-  drawDashedLine(y);
-  y += 20;
-
-  // Signature: Barber
-  doc.setLineWidth(0.5);
-  doc.setLineDashPattern([], 0);
-  doc.line(margin + 10, y, pageWidth - margin - 10, y);
-  y += 6;
-  doc.setFont("courier", "normal");
-  doc.setFontSize(7);
-  doc.text(data.barberName, cx, y, { align: "center" });
-  y += 6;
-  doc.text("Profissional", cx, y, { align: "center" });
-  y += 18;
-
-  // Signature: Manager
-  doc.line(margin + 10, y, pageWidth - margin - 10, y);
-  y += 6;
-  doc.text("Responsável", cx, y, { align: "center" });
-  y += 6;
-  doc.text(data.shopName, cx, y, { align: "center" });
-  y += 12;
-
-  drawDashedLine(y);
-  y += 6;
-
-  // Footer
-  doc.setFontSize(6);
-  doc.text(`Documento gerado em ${now}`, cx, y, { align: "center" });
-  y += 8;
-
-  // Resize page to content
-  const finalHeight = y + 4;
-  const pages = doc.internal.pages;
-  // Update page dimensions
-  (doc.internal as any).pageSize.height = finalHeight;
-
-  // Download
-  const fileName = `${data.type === "advance" ? "adiantamento" : "pagamento"}_${data.barberName.replace(/\s+/g, "_")}_${data.date}.pdf`;
-  doc.save(fileName);
+    const fileName = `${data.type === "advance" ? "adiantamento" : "pagamento"}_${data.barberName.replace(/\s+/g, "_")}_${data.date}.pdf`;
+    doc.save(fileName);
+  } finally {
+    document.body.removeChild(container);
+  }
 };

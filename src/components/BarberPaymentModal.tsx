@@ -25,7 +25,7 @@ const BarberPaymentModal = ({ open, onClose, barber, type, maxAmount, monthStr }
   const isValid = numAmount > 0 && date;
   const isOverLimit = type === "payment" && maxAmount !== undefined && numAmount > maxAmount;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!isValid || isOverLimit) return;
 
     const description = type === "payment"
