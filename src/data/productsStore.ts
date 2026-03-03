@@ -1,9 +1,8 @@
 import { Product } from "@/types/barbershop";
-import { mockProducts } from "@/data/mockData";
 
 type Listener = () => void;
 
-let products: Product[] = [...mockProducts];
+let products: Product[] = [];
 const listeners = new Set<Listener>();
 
 const notify = () => listeners.forEach((l) => l());
