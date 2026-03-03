@@ -52,4 +52,12 @@ export const billsStore = {
     );
     notify();
   },
+  removeBill: (id: string) => {
+    bills = bills.filter((b) => b.id !== id);
+    notify();
+  },
+  removeBillsByGroup: (groupId: string) => {
+    bills = bills.filter((b) => b.recurringGroupId !== groupId);
+    notify();
+  },
 };

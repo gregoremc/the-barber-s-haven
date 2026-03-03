@@ -1,12 +1,14 @@
-import { useState, useMemo, useSyncExternalStore } from "react";
+import { useState, useMemo, useSyncExternalStore, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, AlertCircle, CheckCircle2, RefreshCw, FolderOpen, Paperclip, ChevronLeft, ChevronRight, FastForward, PartyPopper, X, FileText, AlertTriangle } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, RefreshCw, FolderOpen, Paperclip, ChevronLeft, ChevronRight, FastForward, PartyPopper, X, FileText, AlertTriangle, Trash2 } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { Bill, BillAttachment } from "@/types/barbershop";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { billsStore } from "@/data/billsStore";
+import { trashStore } from "@/data/trashStore";
+import { registerRestoreHandler } from "@/pages/Trash";
 
 const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -36,7 +38,19 @@ const Bills = () => {
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [selectedInstallments, setSelectedInstallments] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "single"; bill: Bill } | { type: "group"; groupId: string; bills: Bill[] } | null>(null);
 
+  // Register restore handler for trash
+  useEffect(() => {
+    registerRestoreHandler("bill", (item) => {
+      const data = item.data;
+      if (Array.isArray(data)) {
+        billsStore.addBills(data as Bill[]);
+      } else {
+        billsStore.addBill(data as Bill);
+      }
+    });
+  }, []);
   const selectedMonthStr = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
 
   const navigateMonth = (dir: number) => {
@@ -173,6 +187,21 @@ const Bills = () => {
     billsStore.removeAttachment(billId, attachId);
   };
 
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "single") {
+      const bill = deleteTarget.bill;
+      billsStore.removeBill(bill.id);
+      trashStore.addItem({ type: "bill", typeLabel: "Conta", name: bill.description, data: bill });
+    } else {
+      const { groupId, bills: groupBills } = deleteTarget;
+      const baseName = groupBills[0].description.replace(/\s*\(\d+\/\d+\)/, "");
+      billsStore.removeBillsByGroup(groupId);
+      trashStore.addItem({ type: "bill", typeLabel: "Conta Recorrente", name: baseName, data: groupBills });
+    }
+    setDeleteTarget(null);
+  };
+
   const changeDocMonth = (dir: number) => {
     const [y, m] = docMonth.split("-").map(Number);
     const d = new Date(y, m - 1 + dir, 1);
@@ -273,6 +302,51 @@ const Bills = () => {
                   className="organic-btn-primary"
                 >
                   Confirmar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete confirmation modal */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm"
+            onClick={() => setDeleteTarget(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="organic-card !p-6 max-w-sm w-full mx-4 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-destructive/10">
+                  <AlertTriangle size={20} className="text-destructive" />
+                </div>
+                <h3 className="section-title">Confirmar Exclusão</h3>
+              </div>
+              <p className="text-sm text-muted-foreground font-light">
+                Tem certeza que deseja excluir{" "}
+                {deleteTarget.type === "single"
+                  ? `"${deleteTarget.bill.description}"`
+                  : `todas as ${deleteTarget.bills.length} parcelas deste grupo`}
+                ? O item será enviado para a lixeira.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setDeleteTarget(null)} className="organic-btn-secondary">Cancelar</button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="organic-btn bg-destructive text-destructive-foreground hover:opacity-90"
+                >
+                  Excluir
                 </button>
               </div>
             </motion.div>
@@ -607,6 +681,15 @@ const Bills = () => {
                             {paidCount}/{group.length} pagas
                           </span>
                         )}
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "group", groupId, bills: group }); }}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          title="Excluir grupo"
+                        >
+                          <Trash2 size={15} />
+                        </motion.button>
                         <ChevronRight size={16} className={`text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                       </div>
                     </button>
@@ -770,6 +853,15 @@ const Bills = () => {
                               <CheckCircle2 size={14} /> Pagar
                             </motion.button>
                           )}
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setDeleteTarget({ type: "single", bill })}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 size={14} />
+                          </motion.button>
                         </div>
                       </td>
                     </motion.tr>

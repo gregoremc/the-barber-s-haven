@@ -18,6 +18,7 @@ const typeLabels: Record<string, string> = {
   service: "Serviço",
   client: "Cliente",
   barber: "Barbeiro",
+  bill: "Conta",
 };
 
 const Trash = () => {

@@ -1,6 +1,6 @@
 export interface TrashItem {
   id: string;
-  type: "product" | "service" | "client" | "barber" | "supplier";
+  type: "product" | "service" | "client" | "barber" | "supplier" | "bill";
   typeLabel: string;
   name: string;
   data: any;
