@@ -1,6 +1,6 @@
 import { useSyncExternalStore, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Users, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, Eye, DollarSign, ArrowDownLeft } from "lucide-react";
+import { Plus, Users, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, Eye, DollarSign, ArrowDownLeft, Undo2 } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import { paymentsStore } from "@/data/paymentsStore";
 import { barbersStore } from "@/data/barbersStore";
@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import BarberPaymentModal from "@/components/BarberPaymentModal";
+import ConfirmDelete from "@/components/ConfirmDelete";
+import { toast } from "sonner";
 
 type GroupedItem = {
   description: string;
@@ -67,6 +69,7 @@ const Payments = () => {
   const [selectedMonth, setSelectedMonth] = useState(() => new Date());
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
   const [paymentModal, setPaymentModal] = useState<{ barber: Barber; type: "payment" | "advance" } | null>(null);
+  const [undoConfirm, setUndoConfirm] = useState<{ id: string; label: string } | null>(null);
 
   const selectedMonthStr = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
 
@@ -466,7 +469,21 @@ const Payments = () => {
                               {payment.date ? new Date(payment.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
                             </p>
                           </div>
-                          <span className="text-sm font-medium text-success ml-3">- R$ {payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                          <div className="flex items-center gap-2 ml-3 shrink-0">
+                            <span className="text-sm font-medium text-success">- R$ {payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => setUndoConfirm({
+                                id: payment.id,
+                                label: `${payment.type === "advance" ? "Adiantamento" : "Pagamento"} de R$ ${payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                              })}
+                              className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
+                              title="Desfazer"
+                            >
+                              <Undo2 size={14} />
+                            </motion.button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -514,6 +531,20 @@ const Payments = () => {
           monthStr={selectedMonthStr}
         />
       )}
+
+      {/* Undo Confirm */}
+      <ConfirmDelete
+        open={!!undoConfirm}
+        itemName={undoConfirm?.label}
+        onCancel={() => setUndoConfirm(null)}
+        onConfirm={() => {
+          if (undoConfirm) {
+            paymentsStore.removeDisbursement(undoConfirm.id);
+            toast.success("Lançamento desfeito com sucesso");
+            setUndoConfirm(null);
+          }
+        }}
+      />
     </div>
   );
 };
