@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   DollarSign,
-  Package,
   Scissors,
   CalendarDays,
   TrendingUp,
@@ -9,7 +8,7 @@ import {
 } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import MotionContainer from "@/components/MotionContainer";
-import { mockAppointments, mockProducts, mockServices, mockBills } from "@/data/mockData";
+import { mockAppointments, mockServices, mockBills } from "@/data/mockData";
 
 const HIDDEN_KEY = "dashboard_hidden_cards";
 
@@ -40,10 +39,6 @@ const Dashboard = () => {
     (a) => a.date === "2026-03-02" && a.status === "completed"
   ).length;
 
-  const totalProductsValue = mockProducts.reduce(
-    (acc, p) => acc + p.sellPrice * p.stock,
-    0
-  );
 
   const pendingBills = mockBills.filter((b) => b.status !== "paid").reduce(
     (acc, b) => acc + b.amount,
@@ -61,7 +56,7 @@ const Dashboard = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         <StatCard
           label="Receita do Mês"
           value={`R$ ${monthRevenue.toLocaleString("pt-BR")}`}
@@ -82,20 +77,11 @@ const Dashboard = () => {
           delay={0.05}
         />
         <StatCard
-          label="Estoque em Produtos"
-          value={`R$ ${totalProductsValue.toLocaleString("pt-BR")}`}
-          icon={Package}
-          delay={0.1}
-          hideable
-          hidden={!!hiddenCards.stock}
-          onToggleVisibility={() => toggle("stock")}
-        />
-        <StatCard
           label="Contas Pendentes"
           value={`R$ ${pendingBills.toLocaleString("pt-BR")}`}
           icon={TrendingUp}
           trend="3 contas em aberto"
-          delay={0.15}
+          delay={0.1}
           hideable
           hidden={!!hiddenCards.bills}
           onToggleVisibility={() => toggle("bills")}
@@ -163,35 +149,6 @@ const Dashboard = () => {
           </div>
         </MotionContainer>
       </div>
-
-      <MotionContainer delay={0.3}>
-        <div className="organic-card space-y-4">
-          <h2 className="section-title flex items-center gap-2">
-            <Users size={18} strokeWidth={1.5} />
-            Estoque Baixo
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockProducts
-              .filter((p) => p.stock < 10)
-              .map((product) => (
-                <div
-                  key={product.id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-secondary/50"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{product.name}</p>
-                    <p className="text-xs text-muted-foreground font-light">
-                      {product.category}
-                    </p>
-                  </div>
-                  <span className="text-xs bg-warning/10 text-warning-foreground px-3 py-1 rounded-full font-medium">
-                    {product.stock} un
-                  </span>
-                </div>
-              ))}
-          </div>
-        </div>
-      </MotionContainer>
     </div>
   );
 };
