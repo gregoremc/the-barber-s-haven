@@ -1,5 +1,5 @@
 import { useState, useSyncExternalStore } from "react";
-import { useNavigate } from "react-router-dom";
+import NewAppointmentModal from "@/components/NewAppointmentModal";
 import {
   DollarSign,
   CalendarDays,
@@ -32,7 +32,7 @@ const getHidden = (): Record<string, boolean> => {
 };
 
 const Dashboard = () => {
-  const navigate = useNavigate();
+  
   const [hiddenCards, setHiddenCards] = useState<Record<string, boolean>>(getHidden);
   const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
   const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
@@ -43,6 +43,7 @@ const Dashboard = () => {
   const activeBarbers = barbers.filter((b) => b.active !== false);
 
   // Sale modal state
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [showSaleModal, setShowSaleModal] = useState(false);
   const [saleProductId, setSaleProductId] = useState("");
   const [saleQuantity, setSaleQuantity] = useState("1");
@@ -217,7 +218,7 @@ const Dashboard = () => {
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          onClick={() => navigate("/schedule")}
+          onClick={() => setShowAppointmentModal(true)}
           className="organic-btn-primary flex items-center gap-2"
         >
           <Plus size={16} />
@@ -349,6 +350,8 @@ const Dashboard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <NewAppointmentModal open={showAppointmentModal} onClose={() => setShowAppointmentModal(false)} />
     </div>
   );
 };
