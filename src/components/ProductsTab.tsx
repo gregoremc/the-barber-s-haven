@@ -243,12 +243,48 @@ const ProductsTab = ({ onRegisterRestore }: ProductsTabProps) => {
                   ))}
                 </select>
               </div>
-              <input placeholder="Nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="organic-input" />
-              <input placeholder="Categoria" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="organic-input" />
-              <input placeholder="Preço de Custo" type="number" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: e.target.value })} className="organic-input" />
-              <input placeholder="Preço de Venda" type="number" value={form.sellPrice} onChange={(e) => setForm({ ...form, sellPrice: e.target.value })} className="organic-input" />
-              <input placeholder="Estoque Inicial" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="organic-input" />
-              <input placeholder="Comissão Vendedor (%)" type="number" value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} className="organic-input" />
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Nome *</label>
+                <input placeholder="Nome do produto" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="organic-input" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Categoria</label>
+                <input placeholder="Ex: Cabelo, Barba..." value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="organic-input" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Preço de Custo (R$)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+                  <input placeholder="0,00" type="text" inputMode="decimal" value={form.costPrice} onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
+                    setForm({ ...form, costPrice: val });
+                  }} className="organic-input pl-10" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Preço de Venda (R$)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+                  <input placeholder="0,00" type="text" inputMode="decimal" value={form.sellPrice} onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
+                    setForm({ ...form, sellPrice: val });
+                  }} className="organic-input pl-10" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Estoque Inicial</label>
+                <input placeholder="0" type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="organic-input" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Comissão Vendedor (%)</label>
+                <div className="relative">
+                  <input placeholder="0" type="text" inputMode="decimal" value={form.commission} onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
+                    setForm({ ...form, commission: val });
+                  }} className="organic-input pr-8" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                </div>
+              </div>
             </div>
             {!form.supplierId && suppliers.length === 0 && (
               <p className="text-xs text-destructive">Cadastre um fornecedor primeiro na aba "Fornecedores".</p>
