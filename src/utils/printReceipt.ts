@@ -1,3 +1,5 @@
+import jsPDF from "jspdf";
+
 interface ReceiptData {
   type: "payment" | "advance";
   shopName: string;
@@ -10,118 +12,111 @@ export const printReceipt = (data: ReceiptData) => {
   const title = data.type === "payment" ? "COMPROVANTE DE PAGAMENTO" : "COMPROVANTE DE ADIANTAMENTO";
   const formattedAmount = `R$ ${data.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
   const formattedDate = new Date(data.date + "T12:00:00").toLocaleDateString("pt-BR");
+  const now = new Date().toLocaleString("pt-BR");
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>${title}</title>
-<style>
-  @page {
-    size: 50mm auto;
-    margin: 2mm;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
-    width: 46mm;
-    padding: 2mm;
-    color: #000;
-  }
-  .center { text-align: center; }
-  .bold { font-weight: bold; }
-  .divider {
-    border-top: 1px dashed #000;
-    margin: 3mm 0;
-  }
-  .title {
-    font-size: 11px;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 2mm;
-  }
-  .shop-name {
-    font-size: 12px;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 1mm;
-  }
-  .row {
-    display: flex;
-    justify-content: space-between;
-    margin: 1mm 0;
-  }
-  .amount {
-    font-size: 14px;
-    font-weight: bold;
-    text-align: center;
-    margin: 3mm 0;
-  }
-  .sig-line {
-    border-top: 1px solid #000;
-    margin-top: 10mm;
-    padding-top: 1mm;
-    text-align: center;
-    font-size: 9px;
-  }
-  .sig-section {
-    margin-top: 5mm;
-  }
-  @media print {
-    body { width: 46mm; }
-  }
-</style>
-</head>
-<body>
-  <div class="shop-name">${data.shopName}</div>
-  <div class="divider"></div>
-  <div class="title">${title}</div>
-  <div class="divider"></div>
-  
-  <div class="row">
-    <span>Profissional:</span>
-  </div>
-  <div class="bold">${data.barberName}</div>
-  
-  <div style="margin-top:2mm" class="row">
-    <span>Data:</span>
-    <span class="bold">${formattedDate}</span>
-  </div>
-  
-  <div class="divider"></div>
-  
-  <div class="center" style="font-size:9px">Valor ${data.type === "advance" ? "do Adiantamento" : "Pago"}</div>
-  <div class="amount">${formattedAmount}</div>
-  
-  <div class="divider"></div>
-  
-  <div class="sig-section">
-    <div class="sig-line">
-      ${data.barberName}<br/>Profissional
-    </div>
-  </div>
-  
-  <div class="sig-section">
-    <div class="sig-line">
-      Responsável<br/>${data.shopName}
-    </div>
-  </div>
-  
-  <div class="divider" style="margin-top:5mm"></div>
-  <div class="center" style="font-size:8px;margin-top:1mm">
-    Documento gerado em<br/>${new Date().toLocaleString("pt-BR")}
-  </div>
-</body>
-</html>`;
+  // 50mm width ≈ 141.73 points
+  const pageWidth = 141.73;
+  const doc = new jsPDF({ unit: "pt", format: [pageWidth, 400] });
+  const cx = pageWidth / 2;
+  const margin = 8;
+  let y = 12;
 
-  const printWindow = window.open("", "_blank", "width=220,height=600");
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.onload = () => {
-      printWindow.print();
-    };
-  }
+  const drawDashedLine = (yPos: number) => {
+    doc.setLineDashPattern([2, 2], 0);
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    doc.setLineDashPattern([], 0);
+  };
+
+  // Shop name
+  doc.setFont("courier", "bold");
+  doc.setFontSize(10);
+  doc.text(data.shopName, cx, y, { align: "center" });
+  y += 10;
+
+  drawDashedLine(y);
+  y += 8;
+
+  // Title
+  doc.setFontSize(9);
+  doc.text(title, cx, y, { align: "center" });
+  y += 8;
+
+  drawDashedLine(y);
+  y += 10;
+
+  // Barber
+  doc.setFont("courier", "normal");
+  doc.setFontSize(8);
+  doc.text("Profissional:", margin, y);
+  y += 8;
+  doc.setFont("courier", "bold");
+  doc.setFontSize(9);
+  doc.text(data.barberName, margin, y);
+  y += 10;
+
+  // Date
+  doc.setFont("courier", "normal");
+  doc.setFontSize(8);
+  doc.text("Data:", margin, y);
+  doc.setFont("courier", "bold");
+  doc.text(formattedDate, pageWidth - margin, y, { align: "right" });
+  y += 8;
+
+  drawDashedLine(y);
+  y += 8;
+
+  // Amount label
+  doc.setFont("courier", "normal");
+  doc.setFontSize(7);
+  const amountLabel = data.type === "advance" ? "Valor do Adiantamento" : "Valor Pago";
+  doc.text(amountLabel, cx, y, { align: "center" });
+  y += 10;
+
+  // Amount value
+  doc.setFont("courier", "bold");
+  doc.setFontSize(13);
+  doc.text(formattedAmount, cx, y, { align: "center" });
+  y += 10;
+
+  drawDashedLine(y);
+  y += 20;
+
+  // Signature: Barber
+  doc.setLineWidth(0.5);
+  doc.setLineDashPattern([], 0);
+  doc.line(margin + 10, y, pageWidth - margin - 10, y);
+  y += 6;
+  doc.setFont("courier", "normal");
+  doc.setFontSize(7);
+  doc.text(data.barberName, cx, y, { align: "center" });
+  y += 6;
+  doc.text("Profissional", cx, y, { align: "center" });
+  y += 18;
+
+  // Signature: Manager
+  doc.line(margin + 10, y, pageWidth - margin - 10, y);
+  y += 6;
+  doc.text("Responsável", cx, y, { align: "center" });
+  y += 6;
+  doc.text(data.shopName, cx, y, { align: "center" });
+  y += 12;
+
+  drawDashedLine(y);
+  y += 6;
+
+  // Footer
+  doc.setFontSize(6);
+  doc.text(`Documento gerado em ${now}`, cx, y, { align: "center" });
+  y += 8;
+
+  // Resize page to content
+  const finalHeight = y + 4;
+  const pages = doc.internal.pages;
+  // Update page dimensions
+  (doc.internal as any).pageSize.height = finalHeight;
+
+  // Download
+  const fileName = `${data.type === "advance" ? "adiantamento" : "pagamento"}_${data.barberName.replace(/\s+/g, "_")}_${data.date}.pdf`;
+  doc.save(fileName);
 };

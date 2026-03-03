@@ -50,4 +50,8 @@ export const paymentsStore = {
     ];
     notify();
   },
+  removeDisbursement: (id: string) => {
+    payments = payments.filter((p) => p.id !== id);
+    notify();
+  },
 };
