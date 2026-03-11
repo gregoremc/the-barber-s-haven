@@ -17,6 +17,7 @@ const mapFromDb = (row: any): Appointment => ({
   date: row.date,
   time: row.time,
   status: row.status,
+  planId: row.plan_id || null,
 });
 
 export const appointmentsStore = {
