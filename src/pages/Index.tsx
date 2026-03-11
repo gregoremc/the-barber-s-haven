@@ -21,8 +21,6 @@ import { servicesStore } from "@/data/servicesStore";
 import { paymentsStore } from "@/data/paymentsStore";
 import { revenueStore } from "@/data/revenueStore";
 import { productsStore } from "@/data/productsStore";
-import { clientsStore } from "@/data/clientsStore";
-import { clientPlansStore } from "@/data/clientPlansStore";
 import { plansStore } from "@/data/plansStore";
 import { toast } from "@/hooks/use-toast";
 
