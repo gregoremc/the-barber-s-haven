@@ -558,31 +558,46 @@ export type Database = {
       }
       shop_settings: {
         Row: {
+          close_time: string
           created_at: string
           id: string
           logo_url: string | null
           name: string
+          open_time: string
           subtitle: string | null
           updated_at: string
           user_id: string
+          weekend_close_time: string
+          weekend_open_time: string
+          working_days: Json
         }
         Insert: {
+          close_time?: string
           created_at?: string
           id?: string
           logo_url?: string | null
           name?: string
+          open_time?: string
           subtitle?: string | null
           updated_at?: string
           user_id: string
+          weekend_close_time?: string
+          weekend_open_time?: string
+          working_days?: Json
         }
         Update: {
+          close_time?: string
           created_at?: string
           id?: string
           logo_url?: string | null
           name?: string
+          open_time?: string
           subtitle?: string | null
           updated_at?: string
           user_id?: string
+          weekend_close_time?: string
+          weekend_open_time?: string
+          working_days?: Json
         }
         Relationships: []
       }
