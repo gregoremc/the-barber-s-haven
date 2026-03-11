@@ -418,10 +418,17 @@ const Schedule = () => {
                                 className="p-0 border-r border-border/50 last:border-r-0 align-top"
                               >
                                 <div
-                                  className={`m-0.5 p-2 rounded-lg border h-full cursor-pointer transition-all hover:opacity-80 ${statusColors[apt.status]}`}
+                                  className={`m-0.5 p-2 rounded-lg border h-full cursor-pointer transition-all hover:opacity-80 relative group ${statusColors[apt.status]}`}
                                   onClick={() => setSelectedApt(apt)}
                                 >
-                                  <p className="text-xs font-medium truncate">{apt.time} - {apt.clientName}</p>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteAppointment(apt); }}
+                                    className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                                    title="Excluir"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                  <p className="text-xs font-medium truncate pr-5">{apt.time} - {apt.clientName}</p>
                                   <p className="text-[10px] text-muted-foreground truncate mt-0.5">
                                     {aptServices.map((s) => s!.name).join(", ")}
                                   </p>
