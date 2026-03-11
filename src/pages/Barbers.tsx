@@ -8,6 +8,7 @@ import { Barber, BarberAttachment } from "@/types/barbershop";
 import { barbersStore } from "@/data/barbersStore";
 import { appointmentsStore } from "@/data/appointmentsStore";
 import { paymentsStore } from "@/data/paymentsStore";
+import { shopStore, WorkingDays } from "@/data/shopStore";
 import { toast } from "sonner";
 
 const Barbers = () => {
