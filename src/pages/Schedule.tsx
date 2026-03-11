@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ChevronLeft, ChevronRight, X, User, Check, Ban, Trash2 } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, User, Check, Ban, Trash2, Crown } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ClientSearch from "@/components/ClientSearch";
 import { servicesStore } from "@/data/servicesStore";
@@ -174,6 +174,19 @@ const Schedule = () => {
     }
   }, [dateStr, clientPlans, allPlans, allClients, appointments, activeBarbers]);
 
+  // Helper: detect if an appointment is from a client plan, return plan info
+  const getPlanForAppointment = (apt: Appointment) => {
+    const client = allClients.find((c) => c.name === apt.clientName);
+    if (!client) return null;
+    const dayOfWeek = new Date(apt.date + "T12:00:00").getDay();
+    const cp = clientPlans.find(
+      (cp) => cp.clientId === client.id && cp.active && cp.time === apt.time && cp.dayOfWeek === dayOfWeek
+    );
+    if (!cp) return null;
+    const plan = allPlans.find((p) => p.id === cp.planId);
+    return plan || null;
+  };
+
   // Dynamic time range based on appointments
   const timeRange = (() => {
     let minH = 8, maxH = 21;
@@ -208,31 +221,55 @@ const Schedule = () => {
   };
   const removeService = (id: string) => setSelectedServices((prev) => prev.filter((s) => s !== id));
 
-  const generateCommissionPayment = (barberId: string, serviceIds: string[], date: string) => {
+  const generateCommissionPayment = (barberId: string, serviceIds: string[], date: string, plan?: { name: string; price: number } | null) => {
     const barber = barbersList.find((b) => b.id === barberId);
     if (!barber) return;
-    const totalServices = serviceIds.reduce((acc, sid) => {
-      const svc = allServices.find((s) => s.id === sid);
-      return acc + (svc?.price || 0);
-    }, 0);
-    const svcNames = serviceIds.map((sid) => allServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
-    revenueStore.addEntry({
-      id: String(Date.now()) + Math.random().toString(36).slice(2),
-      type: "service",
-      amount: totalServices,
-      date,
-      description: svcNames,
-    });
-    const commissionAmount = totalServices * (barber.commission / 100);
-    if (commissionAmount <= 0) return;
-    paymentsStore.addPayment({
-      id: String(Date.now()) + Math.random().toString(36).slice(2),
-      barberId,
-      amount: commissionAmount,
-      date,
-      description: `Comissão: ${svcNames}`,
-      status: "pending",
-    });
+
+    if (plan) {
+      // Plan appointment: use plan price for revenue and commission
+      const description = `Plano: ${plan.name}`;
+      revenueStore.addEntry({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        type: "plan",
+        amount: plan.price,
+        date,
+        description,
+      });
+      const commissionAmount = plan.price * (barber.commission / 100);
+      if (commissionAmount <= 0) return;
+      paymentsStore.addPayment({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        barberId,
+        amount: commissionAmount,
+        date,
+        description: `Comissão: ${description}`,
+        status: "pending",
+      });
+    } else {
+      // Regular appointment
+      const totalServices = serviceIds.reduce((acc, sid) => {
+        const svc = allServices.find((s) => s.id === sid);
+        return acc + (svc?.price || 0);
+      }, 0);
+      const svcNames = serviceIds.map((sid) => allServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+      revenueStore.addEntry({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        type: "service",
+        amount: totalServices,
+        date,
+        description: svcNames,
+      });
+      const commissionAmount = totalServices * (barber.commission / 100);
+      if (commissionAmount <= 0) return;
+      paymentsStore.addPayment({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        barberId,
+        amount: commissionAmount,
+        date,
+        description: `Comissão: ${svcNames}`,
+        status: "pending",
+      });
+    }
   };
 
   const checkConflict = (barberId: string, time: string, serviceIds: string[], excludeId?: string) => {
@@ -290,7 +327,8 @@ const Schedule = () => {
   const updateStatus = (id: string, status: Appointment["status"]) => {
     const apt = appointments.find((a) => a.id === id);
     if (apt && status === "completed") {
-      generateCommissionPayment(apt.barberId, getServiceIds(apt), apt.date);
+      const plan = getPlanForAppointment(apt);
+      generateCommissionPayment(apt.barberId, getServiceIds(apt), apt.date, plan);
     }
     appointmentsStore.updateStatus(id, status);
   };
@@ -509,7 +547,8 @@ const Schedule = () => {
                             const span = getSpan(apt);
                             const svcIds = getServiceIds(apt);
                             const aptServices = svcIds.map((id) => allServices.find((s) => s.id === id)).filter(Boolean);
-                            const totalPrice = aptServices.reduce((acc, s) => acc + s!.price, 0);
+                            const aptPlan = getPlanForAppointment(apt);
+                            const displayPrice = aptPlan ? aptPlan.price : aptServices.reduce((acc, s) => acc + s!.price, 0);
 
                             return (
                               <td
@@ -529,10 +568,17 @@ const Schedule = () => {
                                     <Trash2 size={12} />
                                   </button>
                                   <p className="text-xs font-medium truncate pr-5">{apt.time} - {apt.clientName}</p>
-                                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                                    {aptServices.map((s) => s!.name).join(", ")}
-                                  </p>
-                                  <p className="text-[10px] font-medium mt-0.5">R$ {totalPrice.toFixed(2)}</p>
+                                  {aptPlan ? (
+                                    <p className="text-[10px] text-accent truncate mt-0.5 flex items-center gap-1">
+                                      <Crown size={10} className="flex-shrink-0" />
+                                      {aptPlan.name}
+                                    </p>
+                                  ) : (
+                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                      {aptServices.map((s) => s!.name).join(", ")}
+                                    </p>
+                                  )}
+                                  <p className="text-[10px] font-medium mt-0.5">R$ {displayPrice.toFixed(2)}</p>
                                   <span className={`inline-block text-[9px] mt-1 px-1.5 py-0.5 rounded-full ${
                                     apt.status === "completed" ? "bg-success/20 text-success" :
                                     apt.status === "cancelled" ? "bg-destructive/20 text-destructive" :
@@ -569,7 +615,8 @@ const Schedule = () => {
           {selectedApt && (() => {
             const svcIds = getServiceIds(selectedApt);
             const aptServices = svcIds.map((id) => allServices.find((s) => s.id === id)).filter(Boolean);
-            const totalPrice = aptServices.reduce((acc, s) => acc + s!.price, 0);
+            const aptPlan = getPlanForAppointment(selectedApt);
+            const displayPrice = aptPlan ? aptPlan.price : aptServices.reduce((acc, s) => acc + s!.price, 0);
             const barber = barbersList.find((b) => b.id === selectedApt.barberId);
 
             return (
@@ -581,14 +628,28 @@ const Schedule = () => {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3 py-2">
-                  <div className="flex flex-wrap gap-2">
-                    {aptServices.map((s) => (
-                      <span key={s!.id} className="text-xs bg-secondary px-3 py-1.5 rounded-full">{s!.name}</span>
-                    ))}
-                  </div>
+                  {aptPlan ? (
+                    <div className="flex items-center gap-2 text-sm text-accent">
+                      <Crown size={14} />
+                      <span className="font-medium">{aptPlan.name}</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {aptServices.map((s) => (
+                        <span key={s!.id} className="text-xs bg-secondary px-3 py-1.5 rounded-full">{s!.name}</span>
+                      ))}
+                    </div>
+                  )}
+                  {aptPlan && aptServices.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {aptServices.map((s) => (
+                        <span key={s!.id} className="text-xs bg-secondary px-3 py-1.5 rounded-full">{s!.name}</span>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="text-sm font-semibold">R$ {totalPrice.toFixed(2)}</span>
+                    <span className="text-sm font-semibold">R$ {displayPrice.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Status</span>

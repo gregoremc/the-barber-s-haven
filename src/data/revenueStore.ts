@@ -4,7 +4,7 @@ type Listener = () => void;
 
 export interface RevenueEntry {
   id: string;
-  type: "service" | "product";
+  type: "service" | "product" | "plan";
   amount: number;
   date: string;
   description: string;
