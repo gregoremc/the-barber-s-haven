@@ -17,6 +17,7 @@ const Barbers = () => {
   const allAppointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
   const allServices = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
   const allProducts = useSyncExternalStore(productsStore.subscribe, productsStore.getProducts);
+  const shop = useSyncExternalStore(shopStore.subscribe, shopStore.getSettings);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
