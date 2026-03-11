@@ -234,8 +234,9 @@ const Schedule = () => {
     return dayAppointments.find((apt) => {
       if (apt.barberId !== barberId) return false;
       const aptMinutes = timeToMinutes(apt.time);
-      if (aptMinutes !== slotMinutes) return false;
-      return true;
+      if (isNaN(aptMinutes)) return false;
+      // Match if appointment starts within this 30-min slot
+      return aptMinutes >= slotMinutes && aptMinutes < slotMinutes + 30;
     });
   };
 
