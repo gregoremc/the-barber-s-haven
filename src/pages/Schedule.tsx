@@ -159,7 +159,7 @@ const Schedule = () => {
       const aptMinutes = timeToMinutes(apt.time);
       const svcIds = getServiceIds(apt);
       const totalDuration = svcIds.reduce((acc, sid) => {
-        const svc = mockServices.find((s) => s.id === sid);
+        const svc = allServices.find((s) => s.id === sid);
         return acc + (svc?.duration || 30);
       }, 0);
       return slotMinutes > aptMinutes && slotMinutes < aptMinutes + totalDuration;
