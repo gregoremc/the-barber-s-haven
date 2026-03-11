@@ -1,12 +1,22 @@
 import { BarberPayment } from "@/types/barbershop";
-import { mockBarberPayments } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 
 type Listener = () => void;
 
-let payments: BarberPayment[] = [...mockBarberPayments];
+let payments: BarberPayment[] = [];
+let userId: string | null = null;
 const listeners = new Set<Listener>();
-
 const notify = () => listeners.forEach((l) => l());
+
+const mapFromDb = (row: any): BarberPayment => ({
+  id: row.id,
+  barberId: row.barber_id,
+  amount: Number(row.amount),
+  date: row.date,
+  description: row.description || "",
+  status: row.status,
+  type: row.type || "commission",
+});
 
 export const paymentsStore = {
   getPayments: () => payments,
@@ -14,13 +24,32 @@ export const paymentsStore = {
     listeners.add(listener);
     return () => listeners.delete(listener);
   },
-  addPayment: (payment: BarberPayment) => {
-    payments = [...payments, payment];
+  setUserId: async (uid: string) => {
+    userId = uid;
+    const { data } = await supabase.from("barber_payments").select("*").eq("user_id", uid).order("date", { ascending: false });
+    payments = (data || []).map(mapFromDb);
     notify();
   },
-  markPaid: (id: string) => {
+  addPayment: async (payment: Omit<BarberPayment, "id"> & { id?: string }) => {
+    if (!userId) return;
+    const { data } = await supabase.from("barber_payments").insert({
+      user_id: userId,
+      barber_id: payment.barberId,
+      amount: payment.amount,
+      date: payment.date,
+      description: payment.description,
+      status: payment.status || "pending",
+      type: payment.type || "commission",
+    }).select().single();
+    if (data) {
+      payments = [...payments, mapFromDb(data)];
+      notify();
+    }
+  },
+  markPaid: async (id: string) => {
     payments = payments.map((p) => (p.id === id ? { ...p, status: "paid" as const } : p));
     notify();
+    await supabase.from("barber_payments").update({ status: "paid" }).eq("id", id);
   },
   getBarberBalance: (barberId: string, monthStr: string) => {
     const monthPayments = payments.filter(
@@ -35,23 +64,26 @@ export const paymentsStore = {
       .reduce((a, p) => a + p.amount, 0);
     return commissions - disbursed;
   },
-  addDisbursement: (barberId: string, amount: number, date: string, type: "payment" | "advance", description: string) => {
-    payments = [
-      ...payments,
-      {
-        id: String(Date.now()),
-        barberId,
-        amount,
-        date,
-        description,
-        status: "paid" as const,
-        type,
-      },
-    ];
-    notify();
+  addDisbursement: async (barberId: string, amount: number, date: string, type: "payment" | "advance", description: string) => {
+    if (!userId) return;
+    const { data } = await supabase.from("barber_payments").insert({
+      user_id: userId,
+      barber_id: barberId,
+      amount,
+      date,
+      description,
+      status: "paid",
+      type,
+    }).select().single();
+    if (data) {
+      payments = [...payments, mapFromDb(data)];
+      notify();
+    }
   },
-  removeDisbursement: (id: string) => {
+  removeDisbursement: async (id: string) => {
     payments = payments.filter((p) => p.id !== id);
     notify();
+    await supabase.from("barber_payments").delete().eq("id", id);
   },
+  clear: () => { payments = []; userId = null; notify(); },
 };

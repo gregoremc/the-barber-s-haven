@@ -6,19 +6,13 @@ export interface Client {
   notes: string;
 }
 
-const initialClients: Client[] = [
-  { id: "1", name: "João Pedro", phone: "(11) 99999-0001", email: "joao@email.com", notes: "Cliente frequente" },
-  { id: "2", name: "Marcos Oliveira", phone: "(11) 99999-0002", email: "marcos@email.com", notes: "" },
-  { id: "3", name: "Lucas Mendes", phone: "(11) 99999-0003", email: "lucas@email.com", notes: "Prefere corte degradê" },
-  { id: "4", name: "Felipe Costa", phone: "(11) 99999-0004", email: "felipe@email.com", notes: "" },
-  { id: "5", name: "Bruno Alves", phone: "(11) 99999-0005", email: "bruno@email.com", notes: "Alérgico a alguns produtos" },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 type Listener = () => void;
 
-let clients: Client[] = [...initialClients];
+let clients: Client[] = [];
+let userId: string | null = null;
 const listeners = new Set<Listener>();
-
 const notify = () => listeners.forEach((l) => l());
 
 export const clientsStore = {
@@ -27,16 +21,42 @@ export const clientsStore = {
     listeners.add(listener);
     return () => listeners.delete(listener);
   },
-  addClient: (client: Client) => {
-    clients = [...clients, client];
+  setUserId: async (uid: string) => {
+    userId = uid;
+    const { data } = await supabase.from("clients").select("*").eq("user_id", uid).order("name");
+    clients = (data || []).map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      phone: r.phone || "",
+      email: "",
+      notes: "",
+    }));
     notify();
   },
-  updateClient: (id: string, data: Partial<Client>) => {
+  addClient: async (client: Omit<Client, "id"> & { id?: string }) => {
+    if (!userId) return;
+    const { data } = await supabase.from("clients").insert({
+      user_id: userId,
+      name: client.name,
+      phone: client.phone,
+    }).select().single();
+    if (data) {
+      clients = [...clients, { id: data.id, name: data.name, phone: data.phone || "", email: "", notes: "" }];
+      notify();
+    }
+  },
+  updateClient: async (id: string, data: Partial<Client>) => {
     clients = clients.map((c) => (c.id === id ? { ...c, ...data } : c));
     notify();
+    const dbData: any = {};
+    if (data.name !== undefined) dbData.name = data.name;
+    if (data.phone !== undefined) dbData.phone = data.phone;
+    await supabase.from("clients").update(dbData).eq("id", id);
   },
-  deleteClient: (id: string) => {
+  deleteClient: async (id: string) => {
     clients = clients.filter((c) => c.id !== id);
     notify();
+    await supabase.from("clients").delete().eq("id", id);
   },
+  clear: () => { clients = []; userId = null; notify(); },
 };
