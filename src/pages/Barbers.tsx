@@ -176,9 +176,6 @@ const Barbers = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-
-
       {/* Hidden avatar input */}
       <input
         ref={avatarInputRef}
@@ -192,6 +189,7 @@ const Barbers = () => {
         }}
       />
 
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Barbeiros</h1>
           <p className="text-muted-foreground font-light mt-1">Cadastro e desempenho</p>
