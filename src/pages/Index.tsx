@@ -319,6 +319,13 @@ const Dashboard = () => {
                             {apt.time}
                           </span>
                           <button
+                            onClick={() => setRescheduleApt(apt)}
+                            className="flex items-center gap-1 text-xs bg-accent/10 text-accent px-3 py-1 rounded-full hover:bg-accent/20 transition-colors"
+                            title="Reagendar"
+                          >
+                            <CalendarClock size={14} />
+                          </button>
+                          <button
                             onClick={() => handleComplete(apt.id)}
                             className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
                             title="Marcar como concluído"
