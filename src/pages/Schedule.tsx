@@ -172,6 +172,7 @@ const Schedule = () => {
         date: dateStr,
         time: cp.time,
         status: "scheduled",
+        planId: plan.id,
       });
     }
   }, [dateStr, clientPlans, allPlans, allClients, appointments, activeBarbers]);
