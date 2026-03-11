@@ -175,7 +175,7 @@ const NewAppointmentModal = ({ open, onClose }: Props) => {
                   })}
                   <span className="text-xs text-muted-foreground self-center ml-2">
                     Total: R$ {selectedServices.reduce((acc, sid) => {
-                      const svc = mockServices.find((s) => s.id === sid);
+                      const svc = allServices.find((s) => s.id === sid);
                       return acc + (svc?.price || 0);
                     }, 0).toFixed(2)}
                   </span>

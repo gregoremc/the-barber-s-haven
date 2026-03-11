@@ -356,7 +356,7 @@ const Schedule = () => {
                                 >
                                   <p className="text-xs font-medium truncate">{apt.time} - {apt.clientName}</p>
                                   <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                                    {services.map((s) => s!.name).join(", ")}
+                                    {aptServices.map((s) => s!.name).join(", ")}
                                   </p>
                                   <p className="text-[10px] font-medium mt-0.5">R$ {totalPrice.toFixed(2)}</p>
                                   <span className={`inline-block text-[9px] mt-1 px-1.5 py-0.5 rounded-full ${
