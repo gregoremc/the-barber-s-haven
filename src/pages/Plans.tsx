@@ -259,6 +259,43 @@ const Plans = () => {
           })}
         </div>
       </MotionContainer>
+
+      {/* Clients Dialog */}
+      <Dialog open={!!viewClientsPlanId} onOpenChange={(open) => !open && setViewClientsPlanId(null)}>
+        <DialogContent className="sm:max-w-md">
+          {viewClientsPlanId && (() => {
+            const plan = plans.find((p) => p.id === viewClientsPlanId);
+            const planClientsList = getPlanClients(viewClientsPlanId);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Clientes — {plan?.name}</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-80 overflow-y-auto space-y-2 py-2">
+                  {planClientsList.map((cp) => {
+                    const client = clients.find((c) => c.id === cp.clientId);
+                    const barber = barbers.find((b) => b.id === cp.barberId);
+                    return (
+                      <div key={cp.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-xl">
+                        <div>
+                          <p className="text-sm font-medium">{client?.name || "—"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {DAY_LABELS[cp.dayOfWeek]} · {cp.time} · {DURATION_LABELS[cp.durationType]}
+                          </p>
+                          {barber && <p className="text-xs text-muted-foreground">Barbeiro: {barber.name}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {planClientsList.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Nenhum cliente neste plano</p>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
