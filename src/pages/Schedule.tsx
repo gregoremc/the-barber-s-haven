@@ -391,7 +391,12 @@ const Schedule = () => {
       data: apt,
     });
 
-    appointmentsStore.deleteAppointment(apt.id);
+    // For plan appointments, cancel instead of delete to prevent auto-regeneration
+    if (apt.planId) {
+      appointmentsStore.updateStatus(apt.id, "cancelled");
+    } else {
+      appointmentsStore.deleteAppointment(apt.id);
+    }
     setSelectedApt(null);
     toast.success("Agendamento excluído e enviado para a lixeira");
   };
