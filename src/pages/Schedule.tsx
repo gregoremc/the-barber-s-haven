@@ -174,6 +174,19 @@ const Schedule = () => {
     }
   }, [dateStr, clientPlans, allPlans, allClients, appointments, activeBarbers]);
 
+  // Helper: detect if an appointment is from a client plan, return plan info
+  const getPlanForAppointment = (apt: Appointment) => {
+    const client = allClients.find((c) => c.name === apt.clientName);
+    if (!client) return null;
+    const dayOfWeek = new Date(apt.date + "T12:00:00").getDay();
+    const cp = clientPlans.find(
+      (cp) => cp.clientId === client.id && cp.active && cp.time === apt.time && cp.dayOfWeek === dayOfWeek
+    );
+    if (!cp) return null;
+    const plan = allPlans.find((p) => p.id === cp.planId);
+    return plan || null;
+  };
+
   // Dynamic time range based on appointments
   const timeRange = (() => {
     let minH = 8, maxH = 21;
