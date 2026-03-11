@@ -714,6 +714,18 @@ const Schedule = () => {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Reschedule Modal */}
+      {rescheduleApt && (
+        <RescheduleModal
+          open={!!rescheduleApt}
+          onClose={() => setRescheduleApt(null)}
+          appointmentId={rescheduleApt.id}
+          currentDate={rescheduleApt.date}
+          currentTime={rescheduleApt.time}
+          clientName={rescheduleApt.clientName}
+        />
+      )}
     </div>
   );
 };

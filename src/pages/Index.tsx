@@ -1,5 +1,6 @@
 import { useState, useSyncExternalStore } from "react";
 import NewAppointmentModal from "@/components/NewAppointmentModal";
+import RescheduleModal from "@/components/RescheduleModal";
 import {
   DollarSign,
   CalendarDays,
@@ -8,6 +9,7 @@ import {
   ShoppingCart,
   Plus,
   X,
+  CalendarClock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import StatCard from "@/components/StatCard";
