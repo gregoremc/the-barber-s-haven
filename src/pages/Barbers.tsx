@@ -280,8 +280,20 @@ const Barbers = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? "bg-primary/10" : "bg-muted"}`}>
-                      <User size={18} className={isActive ? "text-primary" : "text-muted-foreground"} />
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center overflow-hidden cursor-pointer ${isActive ? "bg-primary/10" : "bg-muted"}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        avatarInputRef.current?.setAttribute("data-barber-id", barber.id);
+                        avatarInputRef.current?.click();
+                      }}
+                      title="Clique para alterar a foto"
+                    >
+                      {barber.avatar ? (
+                        <img src={barber.avatar} alt={barber.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={20} className={isActive ? "text-primary" : "text-muted-foreground"} />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
