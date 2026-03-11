@@ -17,6 +17,7 @@ const mapFromDb = (row: any): Appointment => ({
   date: row.date,
   time: row.time,
   status: row.status,
+  planId: row.plan_id || null,
 });
 
 export const appointmentsStore = {
@@ -42,6 +43,7 @@ export const appointmentsStore = {
       date: apt.date,
       time: apt.time,
       status: apt.status || "scheduled",
+      plan_id: apt.planId || null,
     }).select().single();
     if (data) {
       appointments = [...appointments, mapFromDb(data)];
@@ -58,6 +60,7 @@ export const appointmentsStore = {
     notify();
     const dbData: any = {};
     if (data.serviceIds) dbData.service_ids = data.serviceIds;
+    if (data.planId !== undefined) dbData.plan_id = data.planId;
     if (data.clientName) dbData.client_name = data.clientName;
     if (data.barberId) dbData.barber_id = data.barberId;
     if (data.time) dbData.time = data.time;
@@ -81,6 +84,7 @@ export const appointmentsStore = {
       date: apt.date,
       time: apt.time,
       status: apt.status || "scheduled",
+      plan_id: apt.planId || null,
     }).select().single();
     if (data) {
       appointments = [...appointments, mapFromDb(data)];

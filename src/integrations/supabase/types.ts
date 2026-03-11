@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          plan_id: string | null
           service_ids: string[]
           status: string
           time: string
@@ -33,6 +34,7 @@ export type Database = {
           created_at?: string
           date: string
           id?: string
+          plan_id?: string | null
           service_ids?: string[]
           status?: string
           time: string
@@ -45,6 +47,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          plan_id?: string | null
           service_ids?: string[]
           status?: string
           time?: string

@@ -21,8 +21,6 @@ import { servicesStore } from "@/data/servicesStore";
 import { paymentsStore } from "@/data/paymentsStore";
 import { revenueStore } from "@/data/revenueStore";
 import { productsStore } from "@/data/productsStore";
-import { clientsStore } from "@/data/clientsStore";
-import { clientPlansStore } from "@/data/clientPlansStore";
 import { plansStore } from "@/data/plansStore";
 import { toast } from "@/hooks/use-toast";
 
@@ -44,8 +42,6 @@ const Dashboard = () => {
   const services = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
   const products = useSyncExternalStore(productsStore.subscribe, productsStore.getProducts);
   useSyncExternalStore(revenueStore.subscribe, revenueStore.getEntries);
-  const allClients = useSyncExternalStore(clientsStore.subscribe, clientsStore.getClients);
-  const clientPlans = useSyncExternalStore(clientPlansStore.subscribe, clientPlansStore.getClientPlans);
   const allPlans = useSyncExternalStore(plansStore.subscribe, plansStore.getPlans);
   const [rescheduleApt, setRescheduleApt] = useState<any>(null);
 
@@ -53,14 +49,10 @@ const Dashboard = () => {
 
   // Helper: detect plan for appointment
   const getPlanForAppointment = (apt: any) => {
-    const client = allClients.find((c) => c.name === apt.clientName);
-    if (!client) return null;
-    const dayOfWeek = new Date(apt.date + "T12:00:00").getDay();
-    const cp = clientPlans.find(
-      (cp) => cp.clientId === client.id && cp.active && cp.time === apt.time && cp.dayOfWeek === dayOfWeek
-    );
-    if (!cp) return null;
-    return allPlans.find((p) => p.id === cp.planId) || null;
+    if (apt.planId) {
+      return allPlans.find((p: any) => p.id === apt.planId) || null;
+    }
+    return null;
   };
 
   // Sale modal state

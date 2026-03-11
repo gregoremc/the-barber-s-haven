@@ -1,0 +1,1 @@
+ALTER TABLE public.appointments ADD COLUMN plan_id uuid DEFAULT NULL;
