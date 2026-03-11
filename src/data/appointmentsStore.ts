@@ -64,5 +64,27 @@ export const appointmentsStore = {
     if (data.status) dbData.status = data.status;
     await supabase.from("appointments").update(dbData).eq("id", id);
   },
+  deleteAppointment: async (id: string) => {
+    appointments = appointments.filter((a) => a.id !== id);
+    notify();
+    await supabase.from("appointments").delete().eq("id", id);
+  },
+  restoreAppointment: async (apt: Appointment) => {
+    if (!userId) return;
+    const serviceIds = apt.serviceIds?.length ? apt.serviceIds : apt.serviceId ? [apt.serviceId] : [];
+    const { data } = await supabase.from("appointments").insert({
+      user_id: userId,
+      barber_id: apt.barberId,
+      client_name: apt.clientName,
+      service_ids: serviceIds,
+      date: apt.date,
+      time: apt.time,
+      status: apt.status || "scheduled",
+    }).select().single();
+    if (data) {
+      appointments = [...appointments, mapFromDb(data)];
+      notify();
+    }
+  },
   clear: () => { appointments = []; userId = null; notify(); },
 };

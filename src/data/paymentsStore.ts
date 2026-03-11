@@ -85,5 +85,13 @@ export const paymentsStore = {
     notify();
     await supabase.from("barber_payments").delete().eq("id", id);
   },
+  removeCommissionsByDescription: async (description: string, barberId: string, date: string) => {
+    const toRemove = payments.filter((p) => p.description === description && p.barberId === barberId && p.date === date);
+    payments = payments.filter((p) => !(p.description === description && p.barberId === barberId && p.date === date));
+    notify();
+    for (const p of toRemove) {
+      await supabase.from("barber_payments").delete().eq("id", p.id);
+    }
+  },
   clear: () => { payments = []; userId = null; notify(); },
 };
