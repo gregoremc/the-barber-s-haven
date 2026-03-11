@@ -322,7 +322,7 @@ const Schedule = () => {
                           if (apt) {
                             const span = getSpan(apt);
                             const svcIds = getServiceIds(apt);
-                            const services = svcIds.map((id) => mockServices.find((s) => s.id === id)).filter(Boolean);
+                            const aptServices = svcIds.map((id) => allServices.find((s) => s.id === id)).filter(Boolean);
                             const totalPrice = services.reduce((acc, s) => acc + s!.price, 0);
 
                             return (
