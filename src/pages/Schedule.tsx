@@ -126,8 +126,38 @@ const Schedule = () => {
     });
   };
 
+  const checkConflict = (barberId: string, time: string, serviceIds: string[], excludeId?: string) => {
+    const newStart = timeToMinutes(time);
+    const newDuration = serviceIds.reduce((acc, sid) => {
+      const svc = allServices.find((s) => s.id === sid);
+      return acc + (svc?.duration || 30);
+    }, 0);
+    const newEnd = newStart + newDuration;
+
+    return dayAppointments.find((apt) => {
+      if (apt.barberId !== barberId) return false;
+      if (apt.status === "cancelled") return false;
+      if (excludeId && apt.id === excludeId) return false;
+      const aptStart = timeToMinutes(apt.time);
+      const aptSvcIds = getServiceIds(apt);
+      const aptDuration = aptSvcIds.reduce((acc, sid) => {
+        const svc = allServices.find((s) => s.id === sid);
+        return acc + (svc?.duration || 30);
+      }, 0);
+      const aptEnd = aptStart + aptDuration;
+      return newStart < aptEnd && newEnd > aptStart;
+    });
+  };
+
   const handleSave = () => {
     if (!form.clientName || !form.barberId || selectedServices.length === 0 || !form.time) return;
+
+    const conflict = checkConflict(form.barberId, form.time, selectedServices);
+    if (conflict) {
+      toast.error(`Conflito de horário! ${conflict.clientName} já está agendado às ${conflict.time} com esse barbeiro.`);
+      return;
+    }
+
     const status = isCompleted ? "completed" : "scheduled";
     appointmentsStore.addAppointment({
       id: String(Date.now()),
