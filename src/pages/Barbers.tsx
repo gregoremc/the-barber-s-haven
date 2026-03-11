@@ -179,6 +179,18 @@ const Barbers = () => {
       <div className="flex items-center justify-between">
 
 
+      {/* Hidden avatar input */}
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const barberId = avatarInputRef.current?.getAttribute("data-barber-id");
+          if (barberId) handleAvatarUpload(barberId, e.target.files);
+          e.target.value = "";
+        }}
+      />
 
         <div>
           <h1 className="page-title">Barbeiros</h1>
