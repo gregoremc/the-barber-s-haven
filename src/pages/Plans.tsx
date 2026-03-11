@@ -27,6 +27,7 @@ const Plans = () => {
   const [editPlan, setEditPlan] = useState<Plan | null>(null);
   const [form, setForm] = useState({ name: "", frequency: "monthly" as "monthly" | "biweekly", price: "", description: "", serviceIds: [] as string[] });
   const [deleteTarget, setDeleteTarget] = useState<Plan | null>(null);
+  const [viewClientsPlanId, setViewClientsPlanId] = useState<string | null>(null);
 
   // Assign modal
   const [assignPlan, setAssignPlan] = useState<Plan | null>(null);
