@@ -109,6 +109,7 @@ const Schedule = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
+  const [rescheduleApt, setRescheduleApt] = useState<Appointment | null>(null);
   const generatedRef = useRef<Set<string>>(new Set());
 
   const activeBarbers = barbersList.filter((b) => b.active !== false);
