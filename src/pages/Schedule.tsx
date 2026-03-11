@@ -36,17 +36,15 @@ const formatDateBR = (date: Date) =>
 
 const toDateStr = (date: Date) => date.toISOString().split("T")[0];
 
-// Generate time slots from 08:00 to 21:00 in 30-min intervals
-const generateTimeSlots = () => {
+// Generate time slots dynamically based on appointments
+const generateTimeSlots = (startHour: number, endHour: number) => {
   const slots: string[] = [];
-  for (let h = 8; h <= 21; h++) {
+  for (let h = startHour; h <= endHour; h++) {
     slots.push(`${String(h).padStart(2, "0")}:00`);
-    if (h < 21) slots.push(`${String(h).padStart(2, "0")}:30`);
+    if (h < endHour) slots.push(`${String(h).padStart(2, "0")}:30`);
   }
   return slots;
 };
-
-const TIME_SLOTS = generateTimeSlots();
 
 const timeToMinutes = (time: string) => {
   const [h, m] = time.split(":").map(Number);
