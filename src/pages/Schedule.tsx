@@ -520,6 +520,13 @@ const Schedule = () => {
                     </button>
                   </div>
                 )}
+                <button
+                  onClick={() => handleDeleteAppointment(selectedApt)}
+                  className="w-full mt-1 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Trash2 size={14} />
+                  Excluir Agendamento
+                </button>
               </>
             );
           })()}
