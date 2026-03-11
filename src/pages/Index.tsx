@@ -47,6 +47,7 @@ const Dashboard = () => {
   const allClients = useSyncExternalStore(clientsStore.subscribe, clientsStore.getClients);
   const clientPlans = useSyncExternalStore(clientPlansStore.subscribe, clientPlansStore.getClientPlans);
   const allPlans = useSyncExternalStore(plansStore.subscribe, plansStore.getPlans);
+  const [rescheduleApt, setRescheduleApt] = useState<any>(null);
 
   const activeBarbers = barbers.filter((b) => b.active !== false);
 
