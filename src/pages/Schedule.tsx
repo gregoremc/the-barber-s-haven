@@ -256,7 +256,7 @@ const Schedule = () => {
                   );
                 })}
                 <span className="text-xs text-muted-foreground self-center ml-2">
-                  Total: R$ {selectedServices.reduce((acc, sid) => acc + (mockServices.find((s) => s.id === sid)?.price || 0), 0).toFixed(2)}
+                  Total: R$ {selectedServices.reduce((acc, sid) => acc + (allServices.find((s) => s.id === sid)?.price || 0), 0).toFixed(2)}
                 </span>
               </div>
             )}
