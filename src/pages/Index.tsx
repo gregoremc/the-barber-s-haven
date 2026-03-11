@@ -448,6 +448,17 @@ const Dashboard = () => {
       </AnimatePresence>
 
       <NewAppointmentModal open={showAppointmentModal} onClose={() => setShowAppointmentModal(false)} />
+
+      {rescheduleApt && (
+        <RescheduleModal
+          open={!!rescheduleApt}
+          onClose={() => setRescheduleApt(null)}
+          appointmentId={rescheduleApt.id}
+          currentDate={rescheduleApt.date}
+          currentTime={rescheduleApt.time}
+          clientName={rescheduleApt.clientName}
+        />
+      )}
     </div>
   );
 };
