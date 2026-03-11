@@ -163,7 +163,7 @@ const NewAppointmentModal = ({ open, onClose }: Props) => {
               {selectedServices.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {selectedServices.map((sid) => {
-                    const svc = mockServices.find((s) => s.id === sid);
+                    const svc = allServices.find((s) => s.id === sid);
                     return (
                       <span key={sid} className="flex items-center gap-1.5 text-xs bg-secondary px-3 py-1.5 rounded-full">
                         {svc?.name}
