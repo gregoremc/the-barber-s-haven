@@ -615,7 +615,8 @@ const Schedule = () => {
           {selectedApt && (() => {
             const svcIds = getServiceIds(selectedApt);
             const aptServices = svcIds.map((id) => allServices.find((s) => s.id === id)).filter(Boolean);
-            const totalPrice = aptServices.reduce((acc, s) => acc + s!.price, 0);
+            const aptPlan = getPlanForAppointment(selectedApt);
+            const displayPrice = aptPlan ? aptPlan.price : aptServices.reduce((acc, s) => acc + s!.price, 0);
             const barber = barbersList.find((b) => b.id === selectedApt.barberId);
 
             return (
@@ -627,14 +628,28 @@ const Schedule = () => {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3 py-2">
-                  <div className="flex flex-wrap gap-2">
-                    {aptServices.map((s) => (
-                      <span key={s!.id} className="text-xs bg-secondary px-3 py-1.5 rounded-full">{s!.name}</span>
-                    ))}
-                  </div>
+                  {aptPlan ? (
+                    <div className="flex items-center gap-2 text-sm text-accent">
+                      <Crown size={14} />
+                      <span className="font-medium">{aptPlan.name}</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {aptServices.map((s) => (
+                        <span key={s!.id} className="text-xs bg-secondary px-3 py-1.5 rounded-full">{s!.name}</span>
+                      ))}
+                    </div>
+                  )}
+                  {aptPlan && aptServices.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {aptServices.map((s) => (
+                        <span key={s!.id} className="text-xs bg-secondary px-3 py-1.5 rounded-full">{s!.name}</span>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="text-sm font-semibold">R$ {totalPrice.toFixed(2)}</span>
+                    <span className="text-sm font-semibold">R$ {displayPrice.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Status</span>
