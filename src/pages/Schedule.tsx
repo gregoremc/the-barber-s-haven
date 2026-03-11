@@ -99,16 +99,80 @@ const Schedule = () => {
   const barbersList = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
   const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
   const allServices = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
+  const allClients = useSyncExternalStore(clientsStore.subscribe, clientsStore.getClients);
+  const clientPlans = useSyncExternalStore(clientPlansStore.subscribe, clientPlansStore.getClientPlans);
+  const allPlans = useSyncExternalStore(plansStore.subscribe, plansStore.getPlans);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ barberId: "", clientName: "", time: "" });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
+  const generatedRef = useRef<Set<string>>(new Set());
 
   const activeBarbers = barbersList.filter((b) => b.active !== false);
   const dateStr = toDateStr(selectedDate);
   const dayAppointments = appointments.filter((a) => a.date === dateStr);
+
+  // Auto-generate recurring appointments from active client plans
+  useEffect(() => {
+    const dayOfWeek = selectedDate.getDay();
+    const activeCPs = clientPlans.filter((cp) => {
+      if (!cp.active) return false;
+      const plan = allPlans.find((p) => p.id === cp.planId);
+      if (!plan || !plan.active) return false;
+      // Check day of week match
+      if (cp.dayOfWeek !== dayOfWeek) return false;
+      // Check start date
+      if (dateStr < cp.startDate) return false;
+      // Check duration
+      if (cp.durationType === "1_year") {
+        const end = new Date(cp.startDate);
+        end.setFullYear(end.getFullYear() + 1);
+        if (dateStr > toDateStr(end)) return false;
+      } else if (cp.durationType === "2_years") {
+        const end = new Date(cp.startDate);
+        end.setFullYear(end.getFullYear() + 2);
+        if (dateStr > toDateStr(end)) return false;
+      }
+      // For biweekly, check if it's the right week
+      if (plan.frequency === "biweekly") {
+        const start = new Date(cp.startDate);
+        const diffDays = Math.floor((selectedDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        const diffWeeks = Math.floor(diffDays / 7);
+        if (diffWeeks % 2 !== 0) return false;
+      }
+      return true;
+    });
+
+    for (const cp of activeCPs) {
+      const key = `${cp.id}_${dateStr}`;
+      if (generatedRef.current.has(key)) continue;
+      // Check if appointment already exists for this client plan on this date
+      const client = allClients.find((c) => c.id === cp.clientId);
+      if (!client) continue;
+      const exists = appointments.some(
+        (a) => a.date === dateStr && a.clientName === client.name && a.time === cp.time && a.status !== "cancelled"
+      );
+      if (exists) {
+        generatedRef.current.add(key);
+        continue;
+      }
+      const plan = allPlans.find((p) => p.id === cp.planId);
+      if (!plan) continue;
+      generatedRef.current.add(key);
+      appointmentsStore.addAppointment({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        barberId: cp.barberId || (activeBarbers.length > 0 ? activeBarbers[0].id : ""),
+        clientName: client.name,
+        serviceId: plan.serviceIds[0] || "",
+        serviceIds: plan.serviceIds,
+        date: dateStr,
+        time: cp.time,
+        status: "scheduled",
+      });
+    }
+  }, [dateStr, clientPlans, allPlans, allClients, appointments, activeBarbers]);
 
   // Dynamic time range based on appointments
   const timeRange = (() => {
