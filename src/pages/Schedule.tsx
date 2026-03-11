@@ -9,6 +9,8 @@ import { appointmentsStore } from "@/data/appointmentsStore";
 import { Appointment } from "@/types/barbershop";
 import { paymentsStore } from "@/data/paymentsStore";
 import { revenueStore } from "@/data/revenueStore";
+import { trashStore } from "@/data/trashStore";
+import { registerRestoreHandler } from "@/pages/Trash";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
