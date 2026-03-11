@@ -61,6 +61,7 @@ export const appointmentsStore = {
     if (data.clientName) dbData.client_name = data.clientName;
     if (data.barberId) dbData.barber_id = data.barberId;
     if (data.time) dbData.time = data.time;
+    if (data.date) dbData.date = data.date;
     if (data.status) dbData.status = data.status;
     await supabase.from("appointments").update(dbData).eq("id", id);
   },
