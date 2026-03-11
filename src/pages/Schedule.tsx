@@ -1,6 +1,6 @@
-import { useState, useSyncExternalStore, useRef } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ChevronLeft, ChevronRight, X, User } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, User, Check, Ban } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ClientSearch from "@/components/ClientSearch";
 import { servicesStore } from "@/data/servicesStore";
@@ -12,6 +12,7 @@ import { revenueStore } from "@/data/revenueStore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -60,6 +61,7 @@ const Schedule = () => {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
 
   const activeBarbers = barbersList.filter((b) => b.active !== false);
   const dateStr = toDateStr(selectedDate);
@@ -379,26 +381,7 @@ const Schedule = () => {
                               >
                                 <div
                                   className={`m-0.5 p-2 rounded-lg border h-full cursor-pointer transition-all hover:opacity-80 ${statusColors[apt.status]}`}
-                                  onClick={() => {
-                                    if (apt.status === "scheduled") {
-                                      // Show action options
-                                      const action = window.confirm(`${apt.clientName}\n${aptServices.map(s => s!.name).join(", ")}\nR$ ${totalPrice.toFixed(2)}\n\nConcluir atendimento?`);
-                                      if (action) {
-                                        updateStatus(apt.id, "completed");
-                                        toast.success("Atendimento concluído!");
-                                      }
-                                    }
-                                  }}
-                                  onContextMenu={(e) => {
-                                    e.preventDefault();
-                                    if (apt.status === "scheduled") {
-                                      const cancel = window.confirm(`Cancelar agendamento de ${apt.clientName}?`);
-                                      if (cancel) {
-                                        updateStatus(apt.id, "cancelled");
-                                        toast.info("Agendamento cancelado");
-                                      }
-                                    }
-                                  }}
+                                  onClick={() => setSelectedApt(apt)}
                                 >
                                   <p className="text-xs font-medium truncate">{apt.time} - {apt.clientName}</p>
                                   <p className="text-[10px] text-muted-foreground truncate mt-0.5">
@@ -434,6 +417,76 @@ const Schedule = () => {
           </div>
         </MotionContainer>
       )}
+
+      {/* Appointment Detail Dialog */}
+      <Dialog open={!!selectedApt} onOpenChange={(open) => !open && setSelectedApt(null)}>
+        <DialogContent className="sm:max-w-md">
+          {selectedApt && (() => {
+            const svcIds = getServiceIds(selectedApt);
+            const aptServices = svcIds.map((id) => allServices.find((s) => s.id === id)).filter(Boolean);
+            const totalPrice = aptServices.reduce((acc, s) => acc + s!.price, 0);
+            const barber = barbersList.find((b) => b.id === selectedApt.barberId);
+
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-lg">{selectedApt.clientName}</DialogTitle>
+                  <DialogDescription>
+                    {selectedApt.time} — {barber?.name || "Barbeiro"}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 py-2">
+                  <div className="flex flex-wrap gap-2">
+                    {aptServices.map((s) => (
+                      <span key={s!.id} className="text-xs bg-secondary px-3 py-1.5 rounded-full">{s!.name}</span>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Total</span>
+                    <span className="text-sm font-semibold">R$ {totalPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Status</span>
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${
+                      selectedApt.status === "completed" ? "bg-success/20 text-success" :
+                      selectedApt.status === "cancelled" ? "bg-destructive/20 text-destructive" :
+                      "bg-accent/20 text-accent"
+                    }`}>
+                      {statusLabels[selectedApt.status]}
+                    </span>
+                  </div>
+                </div>
+                {selectedApt.status === "scheduled" && (
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        updateStatus(selectedApt.id, "completed");
+                        setSelectedApt(null);
+                        toast.success("Atendimento concluído!");
+                      }}
+                      className="organic-btn-primary flex items-center gap-2 flex-1"
+                    >
+                      <Check size={16} />
+                      Concluir
+                    </button>
+                    <button
+                      onClick={() => {
+                        updateStatus(selectedApt.id, "cancelled");
+                        setSelectedApt(null);
+                        toast.info("Agendamento cancelado");
+                      }}
+                      className="organic-btn-secondary flex items-center gap-2 flex-1 !text-destructive hover:!bg-destructive/10"
+                    >
+                      <Ban size={16} />
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
