@@ -547,7 +547,8 @@ const Schedule = () => {
                             const span = getSpan(apt);
                             const svcIds = getServiceIds(apt);
                             const aptServices = svcIds.map((id) => allServices.find((s) => s.id === id)).filter(Boolean);
-                            const totalPrice = aptServices.reduce((acc, s) => acc + s!.price, 0);
+                            const aptPlan = getPlanForAppointment(apt);
+                            const displayPrice = aptPlan ? aptPlan.price : aptServices.reduce((acc, s) => acc + s!.price, 0);
 
                             return (
                               <td
@@ -567,10 +568,17 @@ const Schedule = () => {
                                     <Trash2 size={12} />
                                   </button>
                                   <p className="text-xs font-medium truncate pr-5">{apt.time} - {apt.clientName}</p>
-                                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                                    {aptServices.map((s) => s!.name).join(", ")}
-                                  </p>
-                                  <p className="text-[10px] font-medium mt-0.5">R$ {totalPrice.toFixed(2)}</p>
+                                  {aptPlan ? (
+                                    <p className="text-[10px] text-accent truncate mt-0.5 flex items-center gap-1">
+                                      <Crown size={10} className="flex-shrink-0" />
+                                      {aptPlan.name}
+                                    </p>
+                                  ) : (
+                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                      {aptServices.map((s) => s!.name).join(", ")}
+                                    </p>
+                                  )}
+                                  <p className="text-[10px] font-medium mt-0.5">R$ {displayPrice.toFixed(2)}</p>
                                   <span className={`inline-block text-[9px] mt-1 px-1.5 py-0.5 rounded-full ${
                                     apt.status === "completed" ? "bg-success/20 text-success" :
                                     apt.status === "cancelled" ? "bg-destructive/20 text-destructive" :
