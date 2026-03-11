@@ -30,6 +30,7 @@ const navItems = [
   { to: "/calculator", icon: Calculator, label: "Calculadora" },
   { to: "/barbers", icon: UserCheck, label: "Barbeiros" },
   { to: "/clients", icon: Users, label: "Clientes" },
+  { to: "/plans", icon: Crown, label: "Planos" },
 ];
 
 const COLLAPSED_WIDTH = 72;

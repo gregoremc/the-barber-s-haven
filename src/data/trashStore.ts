@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface TrashItem {
   id: string;
-  type: "product" | "service" | "client" | "barber" | "supplier" | "bill" | "appointment";
+  type: "product" | "service" | "client" | "barber" | "supplier" | "bill" | "appointment" | "plan";
   typeLabel: string;
   name: string;
   data: any;
