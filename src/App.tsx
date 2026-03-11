@@ -16,6 +16,7 @@ import Clients from "./pages/Clients";
 import CostCalculator from "./pages/CostCalculator";
 import Barbers from "./pages/Barbers";
 import Trash from "./pages/Trash";
+import Plans from "./pages/Plans";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -46,6 +47,7 @@ const ProtectedRoutes = () => {
         <Route path="/clients" element={<Clients />} />
         <Route path="/barbers" element={<Barbers />} />
         <Route path="/calculator" element={<CostCalculator />} />
+        <Route path="/plans" element={<Plans />} />
         <Route path="/trash" element={<Trash />} />
       </Route>
       <Route path="*" element={<NotFound />} />

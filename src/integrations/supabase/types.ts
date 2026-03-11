@@ -274,6 +274,73 @@ export type Database = {
         }
         Relationships: []
       }
+      client_plans: {
+        Row: {
+          active: boolean
+          barber_id: string | null
+          client_id: string
+          created_at: string
+          day_of_week: number
+          duration_type: string
+          id: string
+          plan_id: string
+          start_date: string
+          time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          barber_id?: string | null
+          client_id: string
+          created_at?: string
+          day_of_week?: number
+          duration_type?: string
+          id?: string
+          plan_id: string
+          start_date?: string
+          time?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          barber_id?: string | null
+          client_id?: string
+          created_at?: string
+          day_of_week?: number
+          duration_type?: string
+          id?: string
+          plan_id?: string
+          start_date?: string
+          time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_plans_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_plans_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string
@@ -296,6 +363,45 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          frequency: string
+          id: string
+          name: string
+          price: number
+          service_ids: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          frequency?: string
+          id?: string
+          name: string
+          price?: number
+          service_ids?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          frequency?: string
+          id?: string
+          name?: string
+          price?: number
+          service_ids?: string[] | null
           updated_at?: string
           user_id?: string
         }

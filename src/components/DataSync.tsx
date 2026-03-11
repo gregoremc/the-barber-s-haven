@@ -11,6 +11,8 @@ import { clientsStore } from "@/data/clientsStore";
 import { revenueStore } from "@/data/revenueStore";
 import { shopStore } from "@/data/shopStore";
 import { trashStore } from "@/data/trashStore";
+import { plansStore } from "@/data/plansStore";
+import { clientPlansStore } from "@/data/clientPlansStore";
 
 const DataSync = () => {
   const { user } = useAuth();
@@ -30,6 +32,8 @@ const DataSync = () => {
         revenueStore.setUserId(user.id),
         shopStore.setUserId(user.id),
         trashStore.setUserId(user.id),
+        plansStore.setUserId(user.id),
+        clientPlansStore.setUserId(user.id),
       ]);
     } else {
       // Clear all stores on logout
@@ -44,6 +48,8 @@ const DataSync = () => {
       revenueStore.clear();
       shopStore.clear();
       trashStore.clearLocal();
+      plansStore.clear();
+      clientPlansStore.clear();
     }
   }, [user]);
 

@@ -1,14 +1,22 @@
 import { useState, useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Crown } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import { clientsStore, Client } from "@/data/clientsStore";
+import { clientPlansStore } from "@/data/clientPlansStore";
+import { plansStore } from "@/data/plansStore";
 import { trashStore } from "@/data/trashStore";
 import { registerRestoreHandler } from "@/pages/Trash";
+import { Switch } from "@/components/ui/switch";
+
+const DURATION_LABELS: Record<string, string> = { "1_year": "1 Ano", "2_years": "2 Anos", perpetual: "Perpétuo" };
+const FREQ_LABELS: Record<string, string> = { monthly: "Mensal", biweekly: "Quinzenal" };
 
 const Clients = () => {
   const clients = useSyncExternalStore(clientsStore.subscribe, clientsStore.getClients);
+  const clientPlans = useSyncExternalStore(clientPlansStore.subscribe, clientPlansStore.getClientPlans);
+  const plans = useSyncExternalStore(plansStore.subscribe, plansStore.getPlans);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editClient, setEditClient] = useState<Client | null>(null);
@@ -57,6 +65,9 @@ const Clients = () => {
       setDeleteTarget(null);
     }
   };
+
+  const getClientActivePlans = (clientId: string) =>
+    clientPlans.filter((cp) => cp.clientId === clientId);
 
   return (
     <div className="space-y-8">
@@ -132,28 +143,60 @@ const Clients = () => {
                 <th className="text-left p-4 text-xs text-muted-foreground font-medium">Nome</th>
                 <th className="text-left p-4 text-xs text-muted-foreground font-medium">Telefone</th>
                 <th className="text-left p-4 text-xs text-muted-foreground font-medium">E-mail</th>
+                <th className="text-left p-4 text-xs text-muted-foreground font-medium">Plano</th>
                 <th className="text-left p-4 text-xs text-muted-foreground font-medium">Observações</th>
                 <th className="text-right p-4 text-xs text-muted-foreground font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((client) => (
-                <motion.tr
-                  key={client.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="border-b border-border/30 last:border-0 hover:bg-secondary/30 transition-colors"
-                >
-                  <td className="p-4 text-sm font-medium">{client.name}</td>
-                  <td className="p-4 text-sm text-muted-foreground">{client.phone}</td>
-                  <td className="p-4 text-sm text-muted-foreground">{client.email}</td>
-                  <td className="p-4 text-sm text-muted-foreground">{client.notes || "—"}</td>
-                  <td className="p-4 text-right">
-                    <button onClick={() => openEdit(client)} className="text-xs text-muted-foreground hover:text-foreground mr-3 transition-colors">Editar</button>
-                    <button onClick={() => setDeleteTarget(client)} className="text-xs text-destructive hover:text-destructive/80 transition-colors">Excluir</button>
-                  </td>
-                </motion.tr>
-              ))}
+              {filtered.map((client) => {
+                const activePlans = getClientActivePlans(client.id);
+                return (
+                  <motion.tr
+                    key={client.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="border-b border-border/30 last:border-0 hover:bg-secondary/30 transition-colors"
+                  >
+                    <td className="p-4 text-sm font-medium">{client.name}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{client.phone}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{client.email}</td>
+                    <td className="p-4">
+                      {activePlans.length > 0 ? (
+                        <div className="space-y-1">
+                          {activePlans.map((cp) => {
+                            const plan = plans.find((p) => p.id === cp.planId);
+                            if (!plan) return null;
+                            return (
+                              <div key={cp.id} className="flex items-center gap-2">
+                                <Crown size={12} className={cp.active ? "text-primary" : "text-muted-foreground"} />
+                                <span className={`text-xs font-medium ${cp.active ? "text-primary" : "text-muted-foreground line-through"}`}>
+                                  {plan.name}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {FREQ_LABELS[plan.frequency]} · {DURATION_LABELS[cp.durationType]}
+                                </span>
+                                <Switch
+                                  checked={cp.active}
+                                  onCheckedChange={(checked) => clientPlansStore.toggleActive(cp.id, checked)}
+                                  className="scale-75"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">{client.notes || "—"}</td>
+                    <td className="p-4 text-right">
+                      <button onClick={() => openEdit(client)} className="text-xs text-muted-foreground hover:text-foreground mr-3 transition-colors">Editar</button>
+                      <button onClick={() => setDeleteTarget(client)} className="text-xs text-destructive hover:text-destructive/80 transition-colors">Excluir</button>
+                    </td>
+                  </motion.tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
