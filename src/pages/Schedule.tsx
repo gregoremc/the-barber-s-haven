@@ -381,26 +381,7 @@ const Schedule = () => {
                               >
                                 <div
                                   className={`m-0.5 p-2 rounded-lg border h-full cursor-pointer transition-all hover:opacity-80 ${statusColors[apt.status]}`}
-                                  onClick={() => {
-                                    if (apt.status === "scheduled") {
-                                      // Show action options
-                                      const action = window.confirm(`${apt.clientName}\n${aptServices.map(s => s!.name).join(", ")}\nR$ ${totalPrice.toFixed(2)}\n\nConcluir atendimento?`);
-                                      if (action) {
-                                        updateStatus(apt.id, "completed");
-                                        toast.success("Atendimento concluído!");
-                                      }
-                                    }
-                                  }}
-                                  onContextMenu={(e) => {
-                                    e.preventDefault();
-                                    if (apt.status === "scheduled") {
-                                      const cancel = window.confirm(`Cancelar agendamento de ${apt.clientName}?`);
-                                      if (cancel) {
-                                        updateStatus(apt.id, "cancelled");
-                                        toast.info("Agendamento cancelado");
-                                      }
-                                    }
-                                  }}
+                                  onClick={() => setSelectedApt(apt)}
                                 >
                                   <p className="text-xs font-medium truncate">{apt.time} - {apt.clientName}</p>
                                   <p className="text-[10px] text-muted-foreground truncate mt-0.5">
