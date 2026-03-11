@@ -42,8 +42,23 @@ const Dashboard = () => {
   const services = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
   const products = useSyncExternalStore(productsStore.subscribe, productsStore.getProducts);
   useSyncExternalStore(revenueStore.subscribe, revenueStore.getEntries);
+  const allClients = useSyncExternalStore(clientsStore.subscribe, clientsStore.getClients);
+  const clientPlans = useSyncExternalStore(clientPlansStore.subscribe, clientPlansStore.getClientPlans);
+  const allPlans = useSyncExternalStore(plansStore.subscribe, plansStore.getPlans);
 
   const activeBarbers = barbers.filter((b) => b.active !== false);
+
+  // Helper: detect plan for appointment
+  const getPlanForAppointment = (apt: any) => {
+    const client = allClients.find((c) => c.name === apt.clientName);
+    if (!client) return null;
+    const dayOfWeek = new Date(apt.date + "T12:00:00").getDay();
+    const cp = clientPlans.find(
+      (cp) => cp.clientId === client.id && cp.active && cp.time === apt.time && cp.dayOfWeek === dayOfWeek
+    );
+    if (!cp) return null;
+    return allPlans.find((p) => p.id === cp.planId) || null;
+  };
 
   // Sale modal state
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
