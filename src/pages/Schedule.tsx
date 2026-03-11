@@ -250,17 +250,7 @@ const Schedule = () => {
     toast.success("Agendamento excluído e enviado para a lixeira");
   };
 
-  // Register restore handler for trash
-  registerRestoreHandler("appointment", (item) => {
-    const apt = item.data as Appointment;
-    appointmentsStore.restoreAppointment(apt);
-    // Re-generate financials if it was completed
-    if (apt.status === "completed") {
-      const svcIds = getServiceIds(apt);
-      generateCommissionPayment(apt.barberId, svcIds, apt.date);
-    }
-    toast.success("Agendamento restaurado!");
-  });
+
 
   // Click on empty cell to open form with pre-filled barber and time
   const handleCellClick = (barberId: string, time: string) => {
