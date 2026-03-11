@@ -20,6 +20,7 @@ interface Props {
 
 const NewAppointmentModal = ({ open, onClose }: Props) => {
   const barbersList = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
+  const allServices = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
   const [form, setForm] = useState({ barberId: "", clientName: "", time: "" });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);

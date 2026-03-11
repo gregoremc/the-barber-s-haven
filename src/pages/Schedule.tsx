@@ -56,6 +56,7 @@ const timeToMinutes = (time: string) => {
 const Schedule = () => {
   const barbersList = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
   const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
+  const allServices = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ barberId: "", clientName: "", time: "" });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
