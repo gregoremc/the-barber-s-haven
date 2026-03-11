@@ -323,7 +323,7 @@ const Schedule = () => {
                             const span = getSpan(apt);
                             const svcIds = getServiceIds(apt);
                             const aptServices = svcIds.map((id) => allServices.find((s) => s.id === id)).filter(Boolean);
-                            const totalPrice = services.reduce((acc, s) => acc + s!.price, 0);
+                            const totalPrice = aptServices.reduce((acc, s) => acc + s!.price, 0);
 
                             return (
                               <td
