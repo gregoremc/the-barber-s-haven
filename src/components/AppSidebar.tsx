@@ -11,6 +11,7 @@ import {
   Calculator,
   Users,
   UserCheck,
+  Crown,
   Moon,
   Sun,
   Trash2,
