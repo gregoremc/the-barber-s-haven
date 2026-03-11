@@ -12,7 +12,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import StatCard from "@/components/StatCard";
 import MotionContainer from "@/components/MotionContainer";
-import { mockBills } from "@/data/mockData";
+import { billsStore } from "@/data/billsStore";
 import { appointmentsStore } from "@/data/appointmentsStore";
 import { barbersStore } from "@/data/barbersStore";
 import { servicesStore } from "@/data/servicesStore";

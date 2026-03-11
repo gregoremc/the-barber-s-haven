@@ -2,7 +2,7 @@ import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import ClientSearch from "@/components/ClientSearch";
-import { mockServices } from "@/data/mockData";
+import { servicesStore } from "@/data/servicesStore";
 import { barbersStore } from "@/data/barbersStore";
 import { appointmentsStore } from "@/data/appointmentsStore";
 import { paymentsStore } from "@/data/paymentsStore";
