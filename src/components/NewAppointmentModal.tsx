@@ -45,8 +45,8 @@ const NewAppointmentModal = ({ open, onClose }: Props) => {
   };
 
   const handleSave = () => {
-    if (!form.clientName || !form.barberId || selectedServices.length === 0) {
-      toast({ title: "Preencha todos os campos", description: "Cliente, barbeiro e ao menos um serviço são obrigatórios.", variant: "destructive" });
+    if (!form.clientName || !form.barberId || selectedServices.length === 0 || !form.time) {
+      toast({ title: "Preencha todos os campos", description: "Cliente, barbeiro, horário e ao menos um serviço são obrigatórios.", variant: "destructive" });
       return;
     }
     const status = isCompleted ? "completed" : "scheduled";
