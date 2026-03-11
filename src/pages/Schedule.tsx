@@ -221,31 +221,55 @@ const Schedule = () => {
   };
   const removeService = (id: string) => setSelectedServices((prev) => prev.filter((s) => s !== id));
 
-  const generateCommissionPayment = (barberId: string, serviceIds: string[], date: string) => {
+  const generateCommissionPayment = (barberId: string, serviceIds: string[], date: string, plan?: { name: string; price: number } | null) => {
     const barber = barbersList.find((b) => b.id === barberId);
     if (!barber) return;
-    const totalServices = serviceIds.reduce((acc, sid) => {
-      const svc = allServices.find((s) => s.id === sid);
-      return acc + (svc?.price || 0);
-    }, 0);
-    const svcNames = serviceIds.map((sid) => allServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
-    revenueStore.addEntry({
-      id: String(Date.now()) + Math.random().toString(36).slice(2),
-      type: "service",
-      amount: totalServices,
-      date,
-      description: svcNames,
-    });
-    const commissionAmount = totalServices * (barber.commission / 100);
-    if (commissionAmount <= 0) return;
-    paymentsStore.addPayment({
-      id: String(Date.now()) + Math.random().toString(36).slice(2),
-      barberId,
-      amount: commissionAmount,
-      date,
-      description: `Comissão: ${svcNames}`,
-      status: "pending",
-    });
+
+    if (plan) {
+      // Plan appointment: use plan price for revenue and commission
+      const description = `Plano: ${plan.name}`;
+      revenueStore.addEntry({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        type: "plan",
+        amount: plan.price,
+        date,
+        description,
+      });
+      const commissionAmount = plan.price * (barber.commission / 100);
+      if (commissionAmount <= 0) return;
+      paymentsStore.addPayment({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        barberId,
+        amount: commissionAmount,
+        date,
+        description: `Comissão: ${description}`,
+        status: "pending",
+      });
+    } else {
+      // Regular appointment
+      const totalServices = serviceIds.reduce((acc, sid) => {
+        const svc = allServices.find((s) => s.id === sid);
+        return acc + (svc?.price || 0);
+      }, 0);
+      const svcNames = serviceIds.map((sid) => allServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+      revenueStore.addEntry({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        type: "service",
+        amount: totalServices,
+        date,
+        description: svcNames,
+      });
+      const commissionAmount = totalServices * (barber.commission / 100);
+      if (commissionAmount <= 0) return;
+      paymentsStore.addPayment({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        barberId,
+        amount: commissionAmount,
+        date,
+        description: `Comissão: ${svcNames}`,
+        status: "pending",
+      });
+    }
   };
 
   const checkConflict = (barberId: string, time: string, serviceIds: string[], excludeId?: string) => {
