@@ -1,6 +1,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Tag, Trash2, Edit2, UserPlus, Check } from "lucide-react";
+import { Plus, Search, Tag, Trash2, Edit2, UserPlus, Check, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import MotionContainer from "@/components/MotionContainer";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import { plansStore, Plan } from "@/data/plansStore";
@@ -26,6 +27,7 @@ const Plans = () => {
   const [editPlan, setEditPlan] = useState<Plan | null>(null);
   const [form, setForm] = useState({ name: "", frequency: "monthly" as "monthly" | "biweekly", price: "", description: "", serviceIds: [] as string[] });
   const [deleteTarget, setDeleteTarget] = useState<Plan | null>(null);
+  const [viewClientsPlanId, setViewClientsPlanId] = useState<string | null>(null);
 
   // Assign modal
   const [assignPlan, setAssignPlan] = useState<Plan | null>(null);
@@ -243,15 +245,13 @@ const Plans = () => {
 
                 {planClients.length > 0 && (
                   <div className="border-t border-border/30 pt-2">
-                    <p className="text-[10px] text-muted-foreground mb-1">{planClients.length} cliente(s) ativo(s)</p>
-                    {planClients.map((cp) => {
-                      const client = clients.find((c) => c.id === cp.clientId);
-                      return (
-                        <p key={cp.id} className="text-xs text-foreground">
-                          {client?.name || "—"} · {DAY_LABELS[cp.dayOfWeek]} {cp.time} · {DURATION_LABELS[cp.durationType]}
-                        </p>
-                      );
-                    })}
+                    <button
+                      onClick={() => setViewClientsPlanId(plan.id)}
+                      className="flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors"
+                    >
+                      <Users size={12} />
+                      {planClients.length} cliente(s) ativo(s)
+                    </button>
                   </div>
                 )}
               </motion.div>
@@ -259,6 +259,43 @@ const Plans = () => {
           })}
         </div>
       </MotionContainer>
+
+      {/* Clients Dialog */}
+      <Dialog open={!!viewClientsPlanId} onOpenChange={(open) => !open && setViewClientsPlanId(null)}>
+        <DialogContent className="sm:max-w-md">
+          {viewClientsPlanId && (() => {
+            const plan = plans.find((p) => p.id === viewClientsPlanId);
+            const planClientsList = getPlanClients(viewClientsPlanId);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Clientes — {plan?.name}</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-80 overflow-y-auto space-y-2 py-2">
+                  {planClientsList.map((cp) => {
+                    const client = clients.find((c) => c.id === cp.clientId);
+                    const barber = barbers.find((b) => b.id === cp.barberId);
+                    return (
+                      <div key={cp.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-xl">
+                        <div>
+                          <p className="text-sm font-medium">{client?.name || "—"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {DAY_LABELS[cp.dayOfWeek]} · {cp.time} · {DURATION_LABELS[cp.durationType]}
+                          </p>
+                          {barber && <p className="text-xs text-muted-foreground">Barbeiro: {barber.name}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {planClientsList.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Nenhum cliente neste plano</p>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
