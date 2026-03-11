@@ -327,7 +327,8 @@ const Schedule = () => {
   const updateStatus = (id: string, status: Appointment["status"]) => {
     const apt = appointments.find((a) => a.id === id);
     if (apt && status === "completed") {
-      generateCommissionPayment(apt.barberId, getServiceIds(apt), apt.date);
+      const plan = getPlanForAppointment(apt);
+      generateCommissionPayment(apt.barberId, getServiceIds(apt), apt.date, plan);
     }
     appointmentsStore.updateStatus(id, status);
   };
