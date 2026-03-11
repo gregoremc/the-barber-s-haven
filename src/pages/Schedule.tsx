@@ -53,6 +53,44 @@ const timeToMinutes = (time: string) => {
   const [h, m] = time.split(":").map(Number);
   return h * 60 + m;
 };
+// Register restore handler globally (not inside component) so it works from Trash page
+registerRestoreHandler("appointment", (item) => {
+  const apt = item.data as Appointment;
+  appointmentsStore.restoreAppointment(apt);
+  // Re-generate financials if it was completed
+  if (apt.status === "completed") {
+    const svcIds = getServiceIds(apt);
+    const barbers = barbersStore.getBarbers();
+    const services = servicesStore.getServices();
+    const barber = barbers.find((b) => b.id === apt.barberId);
+    if (barber) {
+      const totalServices = svcIds.reduce((acc, sid) => {
+        const svc = services.find((s) => s.id === sid);
+        return acc + (svc?.price || 0);
+      }, 0);
+      const svcNames = svcIds.map((sid) => services.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+      revenueStore.addEntry({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        type: "service",
+        amount: totalServices,
+        date: apt.date,
+        description: svcNames,
+      });
+      const commissionAmount = totalServices * (barber.commission / 100);
+      if (commissionAmount > 0) {
+        paymentsStore.addPayment({
+          id: String(Date.now()) + Math.random().toString(36).slice(2),
+          barberId: apt.barberId,
+          amount: commissionAmount,
+          date: apt.date,
+          description: `Comissão: ${svcNames}`,
+          status: "pending",
+        });
+      }
+    }
+  }
+  toast.success("Agendamento restaurado!");
+});
 
 const Schedule = () => {
   const barbersList = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
@@ -250,17 +288,7 @@ const Schedule = () => {
     toast.success("Agendamento excluído e enviado para a lixeira");
   };
 
-  // Register restore handler for trash
-  registerRestoreHandler("appointment", (item) => {
-    const apt = item.data as Appointment;
-    appointmentsStore.restoreAppointment(apt);
-    // Re-generate financials if it was completed
-    if (apt.status === "completed") {
-      const svcIds = getServiceIds(apt);
-      generateCommissionPayment(apt.barberId, svcIds, apt.date);
-    }
-    toast.success("Agendamento restaurado!");
-  });
+
 
   // Click on empty cell to open form with pre-filled barber and time
   const handleCellClick = (barberId: string, time: string) => {
