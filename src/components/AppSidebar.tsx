@@ -41,7 +41,7 @@ const AppSidebar = () => {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const shop = useSyncExternalStore(shopStore.subscribe, shopStore.getSettings);
   const [showSettings, setShowSettings] = useState(false);
-  const [settingsForm, setSettingsForm] = useState({ name: shop.name, subtitle: shop.subtitle });
+  const [settingsForm, setSettingsForm] = useState({ name: shop.name, subtitle: shop.subtitle, openTime: shop.openTime, closeTime: shop.closeTime, weekendOpenTime: shop.weekendOpenTime, weekendCloseTime: shop.weekendCloseTime, workingDays: { ...shop.workingDays } });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hovered, setHovered] = useState(false);
 
@@ -56,7 +56,7 @@ const AppSidebar = () => {
   }, [dark]);
 
   const openSettings = () => {
-    setSettingsForm({ name: shop.name, subtitle: shop.subtitle });
+    setSettingsForm({ name: shop.name, subtitle: shop.subtitle, openTime: shop.openTime, closeTime: shop.closeTime, weekendOpenTime: shop.weekendOpenTime, weekendCloseTime: shop.weekendCloseTime, workingDays: { ...shop.workingDays } });
     setShowSettings(true);
   };
 
@@ -69,7 +69,15 @@ const AppSidebar = () => {
   };
 
   const handleSaveSettings = () => {
-    shopStore.update({ name: settingsForm.name || "BarberShop", subtitle: settingsForm.subtitle });
+    shopStore.update({
+      name: settingsForm.name || "BarberShop",
+      subtitle: settingsForm.subtitle,
+      openTime: settingsForm.openTime,
+      closeTime: settingsForm.closeTime,
+      weekendOpenTime: settingsForm.weekendOpenTime,
+      weekendCloseTime: settingsForm.weekendCloseTime,
+      workingDays: settingsForm.workingDays,
+    });
     setShowSettings(false);
   };
 
@@ -312,6 +320,51 @@ const AppSidebar = () => {
                   </div>
                 </div>
 
+                {/* Horário de Funcionamento */}
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground font-medium">Horário de Funcionamento</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Abre (Seg-Sex)</label>
+                      <input type="time" value={settingsForm.openTime} onChange={(e) => setSettingsForm({ ...settingsForm, openTime: e.target.value })} className="organic-input" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Fecha (Seg-Sex)</label>
+                      <input type="time" value={settingsForm.closeTime} onChange={(e) => setSettingsForm({ ...settingsForm, closeTime: e.target.value })} className="organic-input" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Abre (Fim de semana)</label>
+                      <input type="time" value={settingsForm.weekendOpenTime} onChange={(e) => setSettingsForm({ ...settingsForm, weekendOpenTime: e.target.value })} className="organic-input" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Fecha (Fim de semana)</label>
+                      <input type="time" value={settingsForm.weekendCloseTime} onChange={(e) => setSettingsForm({ ...settingsForm, weekendCloseTime: e.target.value })} className="organic-input" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dias de Funcionamento */}
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium">Dias de Funcionamento</p>
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      ["mon", "Seg"], ["tue", "Ter"], ["wed", "Qua"], ["thu", "Qui"], ["fri", "Sex"], ["sat", "Sáb"], ["sun", "Dom"]
+                    ] as const).map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setSettingsForm({ ...settingsForm, workingDays: { ...settingsForm.workingDays, [key]: !settingsForm.workingDays[key] } })}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          settingsForm.workingDays[key]
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-muted-foreground"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex gap-3">
                   <button onClick={handleSaveSettings} className="organic-btn-primary flex-1">Salvar</button>
                   <button onClick={() => setShowSettings(false)} className="organic-btn-secondary flex-1">Cancelar</button>
