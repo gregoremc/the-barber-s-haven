@@ -240,7 +240,7 @@ const Schedule = () => {
               </select>
               <select value="" onChange={(e) => addService(e.target.value)} className="organic-input">
                 <option value="">Adicionar Serviço</option>
-                {mockServices.filter((s) => !selectedServices.includes(s.id)).map((s) => (<option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>))}
+                {allServices.filter((s) => !selectedServices.includes(s.id)).map((s) => (<option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>))}
               </select>
               <input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="organic-input" />
             </div>
