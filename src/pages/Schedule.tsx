@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ChevronLeft, ChevronRight, X, User, Check, Ban, Trash2, Crown } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, User, Check, Ban, Trash2, Crown, CalendarClock } from "lucide-react";
+import RescheduleModal from "@/components/RescheduleModal";
 import MotionContainer from "@/components/MotionContainer";
 import ClientSearch from "@/components/ClientSearch";
 import { servicesStore } from "@/data/servicesStore";
