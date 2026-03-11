@@ -154,15 +154,15 @@ const Schedule = () => {
       // Check if appointment already exists for this client plan on this date
       const client = allClients.find((c) => c.id === cp.clientId);
       if (!client) continue;
+      const plan = allPlans.find((p) => p.id === cp.planId);
+      if (!plan) continue;
       const exists = appointments.some(
-        (a) => a.date === dateStr && a.clientName === client.name && a.planId === plan?.id
+        (a) => a.date === dateStr && a.clientName === client.name && a.planId === plan.id
       );
       if (exists) {
         generatedRef.current.add(key);
         continue;
       }
-      const plan = allPlans.find((p) => p.id === cp.planId);
-      if (!plan) continue;
       generatedRef.current.add(key);
       appointmentsStore.addAppointment({
         id: String(Date.now()) + Math.random().toString(36).slice(2),
