@@ -114,7 +114,7 @@ const Schedule = () => {
 
   const activeBarbers = barbersList.filter((b) => b.active !== false);
   const dateStr = toDateStr(selectedDate);
-  const dayAppointments = appointments.filter((a) => a.date === dateStr);
+  const dayAppointments = appointments.filter((a) => a.date === dateStr && a.status !== "cancelled");
 
   // Auto-generate recurring appointments from active client plans
   useEffect(() => {
