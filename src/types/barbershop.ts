@@ -73,6 +73,7 @@ export interface Appointment {
   date: string;
   time: string;
   status: 'scheduled' | 'completed' | 'cancelled';
+  planId?: string | null; // linked plan (for recurring plan appointments)
 }
 
 export interface BarberPayment {
