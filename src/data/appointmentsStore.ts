@@ -43,6 +43,7 @@ export const appointmentsStore = {
       date: apt.date,
       time: apt.time,
       status: apt.status || "scheduled",
+      plan_id: apt.planId || null,
     }).select().single();
     if (data) {
       appointments = [...appointments, mapFromDb(data)];
