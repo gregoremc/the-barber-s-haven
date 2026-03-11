@@ -111,7 +111,8 @@ const Dashboard = () => {
   );
   const todayCompleted = todayCompletedList.length;
 
-  const pendingBills = mockBills.filter((b) => b.status !== "paid").reduce(
+  const bills = useSyncExternalStore(billsStore.subscribe, billsStore.getBills);
+  const pendingBills = bills.filter((b) => b.status !== "paid").reduce(
     (acc, b) => acc + b.amount,
     0
   );
