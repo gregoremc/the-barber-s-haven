@@ -87,10 +87,10 @@ const Schedule = () => {
     const barber = barbersList.find((b) => b.id === barberId);
     if (!barber) return;
     const totalServices = serviceIds.reduce((acc, sid) => {
-      const svc = mockServices.find((s) => s.id === sid);
+      const svc = allServices.find((s) => s.id === sid);
       return acc + (svc?.price || 0);
     }, 0);
-    const svcNames = serviceIds.map((sid) => mockServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+    const svcNames = serviceIds.map((sid) => allServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
     revenueStore.addEntry({
       id: String(Date.now()) + Math.random().toString(36).slice(2),
       type: "service",
