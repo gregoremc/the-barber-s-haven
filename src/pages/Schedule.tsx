@@ -179,15 +179,10 @@ const Schedule = () => {
 
   // Helper: detect if an appointment is from a client plan, return plan info
   const getPlanForAppointment = (apt: Appointment) => {
-    const client = allClients.find((c) => c.name === apt.clientName);
-    if (!client) return null;
-    const dayOfWeek = new Date(apt.date + "T12:00:00").getDay();
-    const cp = clientPlans.find(
-      (cp) => cp.clientId === client.id && cp.active && cp.time === apt.time && cp.dayOfWeek === dayOfWeek
-    );
-    if (!cp) return null;
-    const plan = allPlans.find((p) => p.id === cp.planId);
-    return plan || null;
+    if (apt.planId) {
+      return allPlans.find((p) => p.id === apt.planId) || null;
+    }
+    return null;
   };
 
   // Dynamic time range based on appointments
