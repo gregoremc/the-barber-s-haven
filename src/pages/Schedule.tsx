@@ -417,6 +417,76 @@ const Schedule = () => {
           </div>
         </MotionContainer>
       )}
+
+      {/* Appointment Detail Dialog */}
+      <Dialog open={!!selectedApt} onOpenChange={(open) => !open && setSelectedApt(null)}>
+        <DialogContent className="sm:max-w-md">
+          {selectedApt && (() => {
+            const svcIds = getServiceIds(selectedApt);
+            const aptServices = svcIds.map((id) => allServices.find((s) => s.id === id)).filter(Boolean);
+            const totalPrice = aptServices.reduce((acc, s) => acc + s!.price, 0);
+            const barber = barbersList.find((b) => b.id === selectedApt.barberId);
+
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-lg">{selectedApt.clientName}</DialogTitle>
+                  <DialogDescription>
+                    {selectedApt.time} — {barber?.name || "Barbeiro"}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 py-2">
+                  <div className="flex flex-wrap gap-2">
+                    {aptServices.map((s) => (
+                      <span key={s!.id} className="text-xs bg-secondary px-3 py-1.5 rounded-full">{s!.name}</span>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Total</span>
+                    <span className="text-sm font-semibold">R$ {totalPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Status</span>
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${
+                      selectedApt.status === "completed" ? "bg-success/20 text-success" :
+                      selectedApt.status === "cancelled" ? "bg-destructive/20 text-destructive" :
+                      "bg-accent/20 text-accent"
+                    }`}>
+                      {statusLabels[selectedApt.status]}
+                    </span>
+                  </div>
+                </div>
+                {selectedApt.status === "scheduled" && (
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        updateStatus(selectedApt.id, "completed");
+                        setSelectedApt(null);
+                        toast.success("Atendimento concluído!");
+                      }}
+                      className="organic-btn-primary flex items-center gap-2 flex-1"
+                    >
+                      <Check size={16} />
+                      Concluir
+                    </button>
+                    <button
+                      onClick={() => {
+                        updateStatus(selectedApt.id, "cancelled");
+                        setSelectedApt(null);
+                        toast.info("Agendamento cancelado");
+                      }}
+                      className="organic-btn-secondary flex items-center gap-2 flex-1 !text-destructive hover:!bg-destructive/10"
+                    >
+                      <Ban size={16} />
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
