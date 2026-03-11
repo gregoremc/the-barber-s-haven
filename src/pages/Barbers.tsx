@@ -166,7 +166,7 @@ const Barbers = () => {
     barberApts.forEach((apt) => {
       const svcIds = apt.serviceIds?.length ? apt.serviceIds : apt.serviceId ? [apt.serviceId] : [];
       svcIds.forEach((sid) => {
-        const svc = mockServices.find((s) => s.id === sid);
+        const svc = allServices.find((s) => s.id === sid);
         if (svc) total += svc.price * (barber.commission / 100);
       });
     });
