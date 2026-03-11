@@ -122,7 +122,7 @@ const Barbers = () => {
     barberApts.forEach((apt) => {
       const svcIds = apt.serviceIds?.length ? apt.serviceIds : apt.serviceId ? [apt.serviceId] : [];
       svcIds.forEach((sid) => {
-        const svc = mockServices.find((s) => s.id === sid);
+        const svc = allServices.find((s) => s.id === sid);
         if (svc) {
           if (!totals[svc.name]) totals[svc.name] = { qty: 0, total: 0, type: "serviço" };
           totals[svc.name].qty += 1;
