@@ -18,6 +18,7 @@ const Barbers = () => {
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", cpfCnpj: "", address: "", phone: "", commission: "", paymentDay: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const toggleBarberActive = (barber: Barber) => {
     const isActive = barber.active !== false;
@@ -73,7 +74,17 @@ const Barbers = () => {
     setShowForm(true);
   };
 
-
+  const handleAvatarUpload = (barberId: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      barbersStore.updateBarber(barberId, { avatar: dataUrl });
+      toast.success("Foto atualizada!");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleFileAttach = (barberId: string, files: FileList | null) => {
     if (!files) return;
@@ -165,10 +176,20 @@ const Barbers = () => {
 
   return (
     <div className="space-y-8">
+      {/* Hidden avatar input */}
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const barberId = avatarInputRef.current?.getAttribute("data-barber-id");
+          if (barberId) handleAvatarUpload(barberId, e.target.files);
+          e.target.value = "";
+        }}
+      />
+
       <div className="flex items-center justify-between">
-
-
-
         <div>
           <h1 className="page-title">Barbeiros</h1>
           <p className="text-muted-foreground font-light mt-1">Cadastro e desempenho</p>
@@ -269,8 +290,20 @@ const Barbers = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? "bg-primary/10" : "bg-muted"}`}>
-                      <User size={18} className={isActive ? "text-primary" : "text-muted-foreground"} />
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center overflow-hidden cursor-pointer ${isActive ? "bg-primary/10" : "bg-muted"}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        avatarInputRef.current?.setAttribute("data-barber-id", barber.id);
+                        avatarInputRef.current?.click();
+                      }}
+                      title="Clique para alterar a foto"
+                    >
+                      {barber.avatar ? (
+                        <img src={barber.avatar} alt={barber.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={20} className={isActive ? "text-primary" : "text-muted-foreground"} />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
