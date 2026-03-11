@@ -2,10 +2,25 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Listener = () => void;
 
-interface ShopSettings {
+export interface WorkingDays {
+  mon: boolean;
+  tue: boolean;
+  wed: boolean;
+  thu: boolean;
+  fri: boolean;
+  sat: boolean;
+  sun: boolean;
+}
+
+export interface ShopSettings {
   name: string;
   subtitle: string;
   logoUrl: string | null;
+  openTime: string;
+  closeTime: string;
+  weekendOpenTime: string;
+  weekendCloseTime: string;
+  workingDays: WorkingDays;
 }
 
 let settings: ShopSettings = { name: "BarberShop", subtitle: "Gestão Inteligente", logoUrl: null };
