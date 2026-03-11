@@ -170,7 +170,7 @@ const Schedule = () => {
   const getSpan = (apt: Appointment) => {
     const svcIds = getServiceIds(apt);
     const totalDuration = svcIds.reduce((acc, sid) => {
-      const svc = mockServices.find((s) => s.id === sid);
+      const svc = allServices.find((s) => s.id === sid);
       return acc + (svc?.duration || 30);
     }, 0);
     return Math.max(1, Math.ceil(totalDuration / 30));
