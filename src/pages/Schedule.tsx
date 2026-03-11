@@ -36,17 +36,15 @@ const formatDateBR = (date: Date) =>
 
 const toDateStr = (date: Date) => date.toISOString().split("T")[0];
 
-// Generate time slots from 08:00 to 21:00 in 30-min intervals
-const generateTimeSlots = () => {
+// Generate time slots dynamically based on appointments
+const generateTimeSlots = (startHour: number, endHour: number) => {
   const slots: string[] = [];
-  for (let h = 8; h <= 21; h++) {
+  for (let h = startHour; h <= endHour; h++) {
     slots.push(`${String(h).padStart(2, "0")}:00`);
-    if (h < 21) slots.push(`${String(h).padStart(2, "0")}:30`);
+    if (h < endHour) slots.push(`${String(h).padStart(2, "0")}:30`);
   }
   return slots;
 };
-
-const TIME_SLOTS = generateTimeSlots();
 
 const timeToMinutes = (time: string) => {
   const [h, m] = time.split(":").map(Number);
@@ -66,6 +64,24 @@ const Schedule = () => {
   const activeBarbers = barbersList.filter((b) => b.active !== false);
   const dateStr = toDateStr(selectedDate);
   const dayAppointments = appointments.filter((a) => a.date === dateStr);
+
+  // Dynamic time range based on appointments
+  const timeRange = (() => {
+    let minH = 8, maxH = 21;
+    for (const apt of dayAppointments) {
+      const [h] = apt.time.split(":").map(Number);
+      if (h < minH) minH = h;
+      const svcIds = getServiceIds(apt);
+      const totalDuration = svcIds.reduce((acc, sid) => {
+        const svc = allServices.find((s) => s.id === sid);
+        return acc + (svc?.duration || 30);
+      }, 0);
+      const endH = Math.ceil((h * 60 + totalDuration) / 60);
+      if (endH > maxH) maxH = endH;
+    }
+    return { minH, maxH };
+  })();
+  const TIME_SLOTS = generateTimeSlots(timeRange.minH, timeRange.maxH);
 
   const navigateDay = (dir: number) => {
     setSelectedDate((prev) => {
