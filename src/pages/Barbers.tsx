@@ -2,7 +2,8 @@ import { useState, useRef, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Edit2, Paperclip, X, User, FileText, TrendingUp, TrendingDown, Minus, Power, Users } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
-import { mockServices, mockProducts } from "@/data/mockData";
+import { servicesStore } from "@/data/servicesStore";
+import { productsStore } from "@/data/productsStore";
 import { Barber, BarberAttachment } from "@/types/barbershop";
 import { barbersStore } from "@/data/barbersStore";
 import { appointmentsStore } from "@/data/appointmentsStore";
@@ -13,6 +14,8 @@ const Barbers = () => {
   const barbers = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
   const allPayments = useSyncExternalStore(paymentsStore.subscribe, paymentsStore.getPayments);
   const allAppointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
+  const allServices = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
+  const allProducts = useSyncExternalStore(productsStore.subscribe, productsStore.getProducts);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
@@ -119,7 +122,7 @@ const Barbers = () => {
     barberApts.forEach((apt) => {
       const svcIds = apt.serviceIds?.length ? apt.serviceIds : apt.serviceId ? [apt.serviceId] : [];
       svcIds.forEach((sid) => {
-        const svc = mockServices.find((s) => s.id === sid);
+        const svc = allServices.find((s) => s.id === sid);
         if (svc) {
           if (!totals[svc.name]) totals[svc.name] = { qty: 0, total: 0, type: "serviço" };
           totals[svc.name].qty += 1;
@@ -130,7 +133,7 @@ const Barbers = () => {
 
     // Simulated product sales for demo
     if (monthOffset === 0) {
-      mockProducts.forEach((p) => {
+      allProducts.forEach((p) => {
         totals[p.name] = { qty: 1, total: p.sellPrice, type: "produto" };
       });
     }
@@ -163,7 +166,7 @@ const Barbers = () => {
     barberApts.forEach((apt) => {
       const svcIds = apt.serviceIds?.length ? apt.serviceIds : apt.serviceId ? [apt.serviceId] : [];
       svcIds.forEach((sid) => {
-        const svc = mockServices.find((s) => s.id === sid);
+        const svc = allServices.find((s) => s.id === sid);
         if (svc) total += svc.price * (barber.commission / 100);
       });
     });

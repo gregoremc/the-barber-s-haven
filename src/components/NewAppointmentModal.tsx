@@ -2,7 +2,7 @@ import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import ClientSearch from "@/components/ClientSearch";
-import { mockServices } from "@/data/mockData";
+import { servicesStore } from "@/data/servicesStore";
 import { barbersStore } from "@/data/barbersStore";
 import { appointmentsStore } from "@/data/appointmentsStore";
 import { paymentsStore } from "@/data/paymentsStore";
@@ -20,6 +20,7 @@ interface Props {
 
 const NewAppointmentModal = ({ open, onClose }: Props) => {
   const barbersList = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
+  const allServices = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
   const [form, setForm] = useState({ barberId: "", clientName: "", time: "" });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -71,10 +72,10 @@ const NewAppointmentModal = ({ open, onClose }: Props) => {
     const barber = barbersList.find((b) => b.id === barberId);
     if (!barber) return;
     const totalServices = serviceIds.reduce((acc, sid) => {
-      const svc = mockServices.find((s) => s.id === sid);
+      const svc = allServices.find((s) => s.id === sid);
       return acc + (svc?.price || 0);
     }, 0);
-    const svcNames = serviceIds.map((sid) => mockServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+    const svcNames = serviceIds.map((sid) => allServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
     revenueStore.addEntry({
       id: String(Date.now()) + Math.random().toString(36).slice(2),
       type: "service",
@@ -145,7 +146,7 @@ const NewAppointmentModal = ({ open, onClose }: Props) => {
                   className="organic-input"
                 >
                   <option value="">Adicionar Serviço</option>
-                  {mockServices
+                  {allServices
                     .filter((s) => !selectedServices.includes(s.id))
                     .map((s) => (
                       <option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>
@@ -162,7 +163,7 @@ const NewAppointmentModal = ({ open, onClose }: Props) => {
               {selectedServices.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {selectedServices.map((sid) => {
-                    const svc = mockServices.find((s) => s.id === sid);
+                    const svc = allServices.find((s) => s.id === sid);
                     return (
                       <span key={sid} className="flex items-center gap-1.5 text-xs bg-secondary px-3 py-1.5 rounded-full">
                         {svc?.name}
@@ -174,7 +175,7 @@ const NewAppointmentModal = ({ open, onClose }: Props) => {
                   })}
                   <span className="text-xs text-muted-foreground self-center ml-2">
                     Total: R$ {selectedServices.reduce((acc, sid) => {
-                      const svc = mockServices.find((s) => s.id === sid);
+                      const svc = allServices.find((s) => s.id === sid);
                       return acc + (svc?.price || 0);
                     }, 0).toFixed(2)}
                   </span>

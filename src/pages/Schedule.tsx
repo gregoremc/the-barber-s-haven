@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, ChevronLeft, ChevronRight, X, User } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ClientSearch from "@/components/ClientSearch";
-import { mockServices } from "@/data/mockData";
+import { servicesStore } from "@/data/servicesStore";
 import { barbersStore } from "@/data/barbersStore";
 import { appointmentsStore } from "@/data/appointmentsStore";
 import { Appointment } from "@/types/barbershop";
@@ -56,6 +56,7 @@ const timeToMinutes = (time: string) => {
 const Schedule = () => {
   const barbersList = useSyncExternalStore(barbersStore.subscribe, barbersStore.getBarbers);
   const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAppointments);
+  const allServices = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ barberId: "", clientName: "", time: "" });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -86,10 +87,10 @@ const Schedule = () => {
     const barber = barbersList.find((b) => b.id === barberId);
     if (!barber) return;
     const totalServices = serviceIds.reduce((acc, sid) => {
-      const svc = mockServices.find((s) => s.id === sid);
+      const svc = allServices.find((s) => s.id === sid);
       return acc + (svc?.price || 0);
     }, 0);
-    const svcNames = serviceIds.map((sid) => mockServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+    const svcNames = serviceIds.map((sid) => allServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
     revenueStore.addEntry({
       id: String(Date.now()) + Math.random().toString(36).slice(2),
       type: "service",
@@ -158,7 +159,7 @@ const Schedule = () => {
       const aptMinutes = timeToMinutes(apt.time);
       const svcIds = getServiceIds(apt);
       const totalDuration = svcIds.reduce((acc, sid) => {
-        const svc = mockServices.find((s) => s.id === sid);
+        const svc = allServices.find((s) => s.id === sid);
         return acc + (svc?.duration || 30);
       }, 0);
       return slotMinutes > aptMinutes && slotMinutes < aptMinutes + totalDuration;
@@ -169,7 +170,7 @@ const Schedule = () => {
   const getSpan = (apt: Appointment) => {
     const svcIds = getServiceIds(apt);
     const totalDuration = svcIds.reduce((acc, sid) => {
-      const svc = mockServices.find((s) => s.id === sid);
+      const svc = allServices.find((s) => s.id === sid);
       return acc + (svc?.duration || 30);
     }, 0);
     return Math.max(1, Math.ceil(totalDuration / 30));
@@ -239,14 +240,14 @@ const Schedule = () => {
               </select>
               <select value="" onChange={(e) => addService(e.target.value)} className="organic-input">
                 <option value="">Adicionar Serviço</option>
-                {mockServices.filter((s) => !selectedServices.includes(s.id)).map((s) => (<option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>))}
+                {allServices.filter((s) => !selectedServices.includes(s.id)).map((s) => (<option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>))}
               </select>
               <input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="organic-input" />
             </div>
             {selectedServices.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {selectedServices.map((sid) => {
-                  const svc = mockServices.find((s) => s.id === sid);
+                  const svc = allServices.find((s) => s.id === sid);
                   return (
                     <span key={sid} className="flex items-center gap-1.5 text-xs bg-secondary px-3 py-1.5 rounded-full">
                       {svc?.name}
@@ -255,7 +256,7 @@ const Schedule = () => {
                   );
                 })}
                 <span className="text-xs text-muted-foreground self-center ml-2">
-                  Total: R$ {selectedServices.reduce((acc, sid) => acc + (mockServices.find((s) => s.id === sid)?.price || 0), 0).toFixed(2)}
+                  Total: R$ {selectedServices.reduce((acc, sid) => acc + (allServices.find((s) => s.id === sid)?.price || 0), 0).toFixed(2)}
                 </span>
               </div>
             )}
@@ -321,8 +322,8 @@ const Schedule = () => {
                           if (apt) {
                             const span = getSpan(apt);
                             const svcIds = getServiceIds(apt);
-                            const services = svcIds.map((id) => mockServices.find((s) => s.id === id)).filter(Boolean);
-                            const totalPrice = services.reduce((acc, s) => acc + s!.price, 0);
+                            const aptServices = svcIds.map((id) => allServices.find((s) => s.id === id)).filter(Boolean);
+                            const totalPrice = aptServices.reduce((acc, s) => acc + s!.price, 0);
 
                             return (
                               <td
@@ -335,7 +336,7 @@ const Schedule = () => {
                                   onClick={() => {
                                     if (apt.status === "scheduled") {
                                       // Show action options
-                                      const action = window.confirm(`${apt.clientName}\n${services.map(s => s!.name).join(", ")}\nR$ ${totalPrice.toFixed(2)}\n\nConcluir atendimento?`);
+                                      const action = window.confirm(`${apt.clientName}\n${aptServices.map(s => s!.name).join(", ")}\nR$ ${totalPrice.toFixed(2)}\n\nConcluir atendimento?`);
                                       if (action) {
                                         updateStatus(apt.id, "completed");
                                         toast.success("Atendimento concluído!");
@@ -355,7 +356,7 @@ const Schedule = () => {
                                 >
                                   <p className="text-xs font-medium truncate">{apt.time} - {apt.clientName}</p>
                                   <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                                    {services.map((s) => s!.name).join(", ")}
+                                    {aptServices.map((s) => s!.name).join(", ")}
                                   </p>
                                   <p className="text-[10px] font-medium mt-0.5">R$ {totalPrice.toFixed(2)}</p>
                                   <span className={`inline-block text-[9px] mt-1 px-1.5 py-0.5 rounded-full ${
