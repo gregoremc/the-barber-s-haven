@@ -154,7 +154,7 @@ const Schedule = () => {
       const client = allClients.find((c) => c.id === cp.clientId);
       if (!client) continue;
       const exists = appointments.some(
-        (a) => a.date === dateStr && a.clientName === client.name && a.time === cp.time && a.status !== "cancelled"
+        (a) => a.date === dateStr && a.clientName === client.name && a.planId === plan?.id && a.status !== "cancelled"
       );
       if (exists) {
         generatedRef.current.add(key);
