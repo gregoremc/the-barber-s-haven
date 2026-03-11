@@ -246,12 +246,16 @@ const Schedule = () => {
     return dayAppointments.find((apt) => {
       if (apt.barberId !== barberId) return false;
       const aptMinutes = timeToMinutes(apt.time);
+      if (isNaN(aptMinutes)) return false;
+      // Find which slot this appointment starts in
+      const aptSlotStart = Math.floor(aptMinutes / 30) * 30;
       const svcIds = getServiceIds(apt);
       const totalDuration = svcIds.reduce((acc, sid) => {
         const svc = allServices.find((s) => s.id === sid);
         return acc + (svc?.duration || 30);
       }, 0);
-      return slotMinutes > aptMinutes && slotMinutes < aptMinutes + totalDuration;
+      // Covered if this slot is after the start slot but within the duration
+      return slotMinutes > aptSlotStart && slotMinutes < aptMinutes + totalDuration;
     });
   };
 
