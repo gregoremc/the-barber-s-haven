@@ -1,5 +1,6 @@
 import { useState, useSyncExternalStore } from "react";
 import NewAppointmentModal from "@/components/NewAppointmentModal";
+import RescheduleModal from "@/components/RescheduleModal";
 import {
   DollarSign,
   CalendarDays,
@@ -8,6 +9,7 @@ import {
   ShoppingCart,
   Plus,
   X,
+  CalendarClock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import StatCard from "@/components/StatCard";
@@ -45,6 +47,7 @@ const Dashboard = () => {
   const allClients = useSyncExternalStore(clientsStore.subscribe, clientsStore.getClients);
   const clientPlans = useSyncExternalStore(clientPlansStore.subscribe, clientPlansStore.getClientPlans);
   const allPlans = useSyncExternalStore(plansStore.subscribe, plansStore.getPlans);
+  const [rescheduleApt, setRescheduleApt] = useState<any>(null);
 
   const activeBarbers = barbers.filter((b) => b.active !== false);
 
@@ -316,6 +319,13 @@ const Dashboard = () => {
                             {apt.time}
                           </span>
                           <button
+                            onClick={() => setRescheduleApt(apt)}
+                            className="flex items-center gap-1 text-xs bg-accent/10 text-accent px-3 py-1 rounded-full hover:bg-accent/20 transition-colors"
+                            title="Reagendar"
+                          >
+                            <CalendarClock size={14} />
+                          </button>
+                          <button
                             onClick={() => handleComplete(apt.id)}
                             className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
                             title="Marcar como concluído"
@@ -438,6 +448,17 @@ const Dashboard = () => {
       </AnimatePresence>
 
       <NewAppointmentModal open={showAppointmentModal} onClose={() => setShowAppointmentModal(false)} />
+
+      {rescheduleApt && (
+        <RescheduleModal
+          open={!!rescheduleApt}
+          onClose={() => setRescheduleApt(null)}
+          appointmentId={rescheduleApt.id}
+          currentDate={rescheduleApt.date}
+          currentTime={rescheduleApt.time}
+          clientName={rescheduleApt.clientName}
+        />
+      )}
     </div>
   );
 };

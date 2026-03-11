@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ChevronLeft, ChevronRight, X, User, Check, Ban, Trash2, Crown } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, User, Check, Ban, Trash2, Crown, CalendarClock } from "lucide-react";
+import RescheduleModal from "@/components/RescheduleModal";
 import MotionContainer from "@/components/MotionContainer";
 import ClientSearch from "@/components/ClientSearch";
 import { servicesStore } from "@/data/servicesStore";
@@ -108,6 +109,7 @@ const Schedule = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
+  const [rescheduleApt, setRescheduleApt] = useState<Appointment | null>(null);
   const generatedRef = useRef<Set<string>>(new Set());
 
   const activeBarbers = barbersList.filter((b) => b.active !== false);
@@ -663,28 +665,40 @@ const Schedule = () => {
                   </div>
                 </div>
                 {selectedApt.status === "scheduled" && (
-                  <div className="flex gap-3 pt-2">
+                  <div className="space-y-2 pt-2">
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          updateStatus(selectedApt.id, "completed");
+                          setSelectedApt(null);
+                          toast.success("Atendimento concluído!");
+                        }}
+                        className="organic-btn-primary flex items-center gap-2 flex-1"
+                      >
+                        <Check size={16} />
+                        Concluir
+                      </button>
+                      <button
+                        onClick={() => {
+                          updateStatus(selectedApt.id, "cancelled");
+                          setSelectedApt(null);
+                          toast.info("Agendamento cancelado");
+                        }}
+                        className="organic-btn-secondary flex items-center gap-2 flex-1 !text-destructive hover:!bg-destructive/10"
+                      >
+                        <Ban size={16} />
+                        Cancelar
+                      </button>
+                    </div>
                     <button
                       onClick={() => {
-                        updateStatus(selectedApt.id, "completed");
+                        setRescheduleApt(selectedApt);
                         setSelectedApt(null);
-                        toast.success("Atendimento concluído!");
                       }}
-                      className="organic-btn-primary flex items-center gap-2 flex-1"
+                      className="w-full py-2 text-sm text-accent hover:bg-accent/10 rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
-                      <Check size={16} />
-                      Concluir
-                    </button>
-                    <button
-                      onClick={() => {
-                        updateStatus(selectedApt.id, "cancelled");
-                        setSelectedApt(null);
-                        toast.info("Agendamento cancelado");
-                      }}
-                      className="organic-btn-secondary flex items-center gap-2 flex-1 !text-destructive hover:!bg-destructive/10"
-                    >
-                      <Ban size={16} />
-                      Cancelar
+                      <CalendarClock size={14} />
+                      Reagendar
                     </button>
                   </div>
                 )}
@@ -700,6 +714,18 @@ const Schedule = () => {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Reschedule Modal */}
+      {rescheduleApt && (
+        <RescheduleModal
+          open={!!rescheduleApt}
+          onClose={() => setRescheduleApt(null)}
+          appointmentId={rescheduleApt.id}
+          currentDate={rescheduleApt.date}
+          currentTime={rescheduleApt.time}
+          clientName={rescheduleApt.clientName}
+        />
+      )}
     </div>
   );
 };
