@@ -1,6 +1,6 @@
-import { useState, useSyncExternalStore, useRef } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ChevronLeft, ChevronRight, X, User } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, User, Check, Ban } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ClientSearch from "@/components/ClientSearch";
 import { servicesStore } from "@/data/servicesStore";
@@ -12,6 +12,7 @@ import { revenueStore } from "@/data/revenueStore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
