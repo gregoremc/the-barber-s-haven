@@ -74,7 +74,17 @@ const Barbers = () => {
     setShowForm(true);
   };
 
-
+  const handleAvatarUpload = (barberId: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      barbersStore.updateBarber(barberId, { avatar: dataUrl });
+      toast.success("Foto atualizada!");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleFileAttach = (barberId: string, files: FileList | null) => {
     if (!files) return;
