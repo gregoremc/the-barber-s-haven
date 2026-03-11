@@ -244,15 +244,13 @@ const Plans = () => {
 
                 {planClients.length > 0 && (
                   <div className="border-t border-border/30 pt-2">
-                    <p className="text-[10px] text-muted-foreground mb-1">{planClients.length} cliente(s) ativo(s)</p>
-                    {planClients.map((cp) => {
-                      const client = clients.find((c) => c.id === cp.clientId);
-                      return (
-                        <p key={cp.id} className="text-xs text-foreground">
-                          {client?.name || "—"} · {DAY_LABELS[cp.dayOfWeek]} {cp.time} · {DURATION_LABELS[cp.durationType]}
-                        </p>
-                      );
-                    })}
+                    <button
+                      onClick={() => setViewClientsPlanId(plan.id)}
+                      className="flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors"
+                    >
+                      <Users size={12} />
+                      {planClients.length} cliente(s) ativo(s)
+                    </button>
                   </div>
                 )}
               </motion.div>
