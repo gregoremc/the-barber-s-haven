@@ -40,6 +40,7 @@ const AppSidebar = () => {
   const location = useLocation();
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const shop = useSyncExternalStore(shopStore.subscribe, shopStore.getSettings);
+  const [showSettings, setShowSettings] = useState(false);
   const [settingsForm, setSettingsForm] = useState({ name: shop.name, subtitle: shop.subtitle, openTime: shop.openTime, closeTime: shop.closeTime, weekendOpenTime: shop.weekendOpenTime, weekendCloseTime: shop.weekendCloseTime, workingDays: { ...shop.workingDays } });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hovered, setHovered] = useState(false);
