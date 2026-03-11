@@ -1,6 +1,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Tag, Trash2, Edit2, UserPlus, Check } from "lucide-react";
+import { Plus, Search, Tag, Trash2, Edit2, UserPlus, Check, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import MotionContainer from "@/components/MotionContainer";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import { plansStore, Plan } from "@/data/plansStore";
