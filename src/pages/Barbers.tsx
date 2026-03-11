@@ -176,6 +176,55 @@ const Barbers = () => {
   };
 
   const totalReceivable = selectedBarberId ? getTotalReceivable(selectedBarberId) : 0;
+
+  // Occupancy rate calculation
+  const getOccupancyRate = (barberId: string) => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+    const dayKeyMap: Record<number, keyof WorkingDays> = { 0: "sun", 1: "mon", 2: "tue", 3: "wed", 4: "thu", 5: "fri", 6: "sat" };
+
+    // Calculate total available minutes in the month
+    let totalAvailableMinutes = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(currentYear, currentMonth, d);
+      const dayOfWeek = date.getDay();
+      const dayKey = dayKeyMap[dayOfWeek];
+      if (!shop.workingDays[dayKey]) continue;
+
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const openTime = isWeekend ? shop.weekendOpenTime : shop.openTime;
+      const closeTime = isWeekend ? shop.weekendCloseTime : shop.closeTime;
+
+      const [oh, om] = openTime.split(":").map(Number);
+      const [ch, cm] = closeTime.split(":").map(Number);
+      const minutes = (ch * 60 + cm) - (oh * 60 + om);
+      if (minutes > 0) totalAvailableMinutes += minutes;
+    }
+
+    if (totalAvailableMinutes === 0) return 0;
+
+    // Calculate occupied minutes from completed appointments this month
+    const barberApts = allAppointments.filter((a) => {
+      if (a.barberId !== barberId || a.status !== "completed") return false;
+      const aDate = new Date(a.date + "T12:00:00");
+      return aDate.getMonth() === currentMonth && aDate.getFullYear() === currentYear;
+    });
+
+    let occupiedMinutes = 0;
+    barberApts.forEach((apt) => {
+      const svcIds = apt.serviceIds?.length ? apt.serviceIds : apt.serviceId ? [apt.serviceId] : [];
+      svcIds.forEach((sid) => {
+        const svc = allServices.find((s) => s.id === sid);
+        if (svc) occupiedMinutes += svc.duration;
+      });
+    });
+
+    return Math.min(100, Math.round((occupiedMinutes / totalAvailableMinutes) * 100));
+  };
+
   const monthName = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const allItemNames = Object.keys(currentItems);
 
