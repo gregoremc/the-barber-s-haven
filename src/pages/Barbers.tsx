@@ -18,6 +18,7 @@ const Barbers = () => {
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", cpfCnpj: "", address: "", phone: "", commission: "", paymentDay: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const toggleBarberActive = (barber: Barber) => {
     const isActive = barber.active !== false;
