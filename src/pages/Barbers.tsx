@@ -365,6 +365,11 @@ const Barbers = () => {
                         {!isActive && (
                           <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Inativo</span>
                         )}
+                        {isActive && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                            {getOccupancyRate(barber.id)}% taxa de ocupação
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground font-light">{barber.phone} · {barber.cpfCnpj || "Sem CPF"}</p>
                       <p className="text-xs text-muted-foreground font-light">{barber.address || "Sem endereço"}</p>
