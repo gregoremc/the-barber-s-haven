@@ -68,7 +68,15 @@ const AppSidebar = () => {
   };
 
   const handleSaveSettings = () => {
-    shopStore.update({ name: settingsForm.name || "BarberShop", subtitle: settingsForm.subtitle });
+    shopStore.update({
+      name: settingsForm.name || "BarberShop",
+      subtitle: settingsForm.subtitle,
+      openTime: settingsForm.openTime,
+      closeTime: settingsForm.closeTime,
+      weekendOpenTime: settingsForm.weekendOpenTime,
+      weekendCloseTime: settingsForm.weekendCloseTime,
+      workingDays: settingsForm.workingDays,
+    });
     setShowSettings(false);
   };
 
