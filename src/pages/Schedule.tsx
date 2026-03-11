@@ -65,6 +65,24 @@ const Schedule = () => {
   const dateStr = toDateStr(selectedDate);
   const dayAppointments = appointments.filter((a) => a.date === dateStr);
 
+  // Dynamic time range based on appointments
+  const timeRange = (() => {
+    let minH = 8, maxH = 21;
+    for (const apt of dayAppointments) {
+      const [h] = apt.time.split(":").map(Number);
+      if (h < minH) minH = h;
+      const svcIds = getServiceIds(apt);
+      const totalDuration = svcIds.reduce((acc, sid) => {
+        const svc = allServices.find((s) => s.id === sid);
+        return acc + (svc?.duration || 30);
+      }, 0);
+      const endH = Math.ceil((h * 60 + totalDuration) / 60);
+      if (endH > maxH) maxH = endH;
+    }
+    return { minH, maxH };
+  })();
+  const TIME_SLOTS = generateTimeSlots(timeRange.minH, timeRange.maxH);
+
   const navigateDay = (dir: number) => {
     setSelectedDate((prev) => {
       const next = new Date(prev);
