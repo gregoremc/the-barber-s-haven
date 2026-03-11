@@ -155,35 +155,62 @@ const Dashboard = () => {
     const apt = appointments.find((a) => a.id === aptId);
     if (!apt) return;
 
-    // Record revenue
+    const plan = getPlanForAppointment(apt);
     const serviceIds = apt.serviceIds?.length ? apt.serviceIds : [apt.serviceId];
-    const totalServices = serviceIds.reduce((acc, sid) => {
-      const svc = services.find((s) => s.id === sid);
-      return acc + (svc?.price || 0);
-    }, 0);
-    const svcNames = serviceIds.map((sid) => services.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
 
-    revenueStore.addEntry({
-      id: String(Date.now()) + Math.random().toString(36).slice(2),
-      type: "service",
-      amount: totalServices,
-      date: apt.date,
-      description: svcNames,
-    });
+    if (plan) {
+      // Plan appointment: use plan price
+      const description = `Plano: ${plan.name}`;
+      revenueStore.addEntry({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        type: "plan",
+        amount: plan.price,
+        date: apt.date,
+        description,
+      });
+      const barber = barbers.find((b) => b.id === apt.barberId);
+      if (barber) {
+        const commissionAmount = plan.price * (barber.commission / 100);
+        if (commissionAmount > 0) {
+          paymentsStore.addPayment({
+            id: String(Date.now()) + Math.random().toString(36).slice(2),
+            barberId: barber.id,
+            amount: commissionAmount,
+            date: apt.date,
+            description: `Comissão: ${description}`,
+            status: "pending",
+          });
+        }
+      }
+    } else {
+      // Regular appointment
+      const totalServices = serviceIds.reduce((acc, sid) => {
+        const svc = services.find((s) => s.id === sid);
+        return acc + (svc?.price || 0);
+      }, 0);
+      const svcNames = serviceIds.map((sid) => services.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
 
-    // Generate commission payment
-    const barber = barbers.find((b) => b.id === apt.barberId);
-    if (barber) {
-      const commissionAmount = totalServices * (barber.commission / 100);
-      if (commissionAmount > 0) {
-        paymentsStore.addPayment({
-          id: String(Date.now()) + Math.random().toString(36).slice(2),
-          barberId: barber.id,
-          amount: commissionAmount,
-          date: apt.date,
-          description: `Comissão: ${svcNames}`,
-          status: "pending",
-        });
+      revenueStore.addEntry({
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        type: "service",
+        amount: totalServices,
+        date: apt.date,
+        description: svcNames,
+      });
+
+      const barber = barbers.find((b) => b.id === apt.barberId);
+      if (barber) {
+        const commissionAmount = totalServices * (barber.commission / 100);
+        if (commissionAmount > 0) {
+          paymentsStore.addPayment({
+            id: String(Date.now()) + Math.random().toString(36).slice(2),
+            barberId: barber.id,
+            amount: commissionAmount,
+            date: apt.date,
+            description: `Comissão: ${svcNames}`,
+            status: "pending",
+          });
+        }
       }
     }
 
