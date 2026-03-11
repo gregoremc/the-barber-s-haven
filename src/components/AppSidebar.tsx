@@ -55,7 +55,7 @@ const AppSidebar = () => {
   }, [dark]);
 
   const openSettings = () => {
-    setSettingsForm({ name: shop.name, subtitle: shop.subtitle });
+    setSettingsForm({ name: shop.name, subtitle: shop.subtitle, openTime: shop.openTime, closeTime: shop.closeTime, weekendOpenTime: shop.weekendOpenTime, weekendCloseTime: shop.weekendCloseTime, workingDays: { ...shop.workingDays } });
     setShowSettings(true);
   };
 
