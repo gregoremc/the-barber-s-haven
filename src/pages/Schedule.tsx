@@ -61,6 +61,7 @@ const Schedule = () => {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
 
   const activeBarbers = barbersList.filter((b) => b.active !== false);
   const dateStr = toDateStr(selectedDate);
