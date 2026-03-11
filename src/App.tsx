@@ -16,6 +16,7 @@ import Clients from "./pages/Clients";
 import CostCalculator from "./pages/CostCalculator";
 import Barbers from "./pages/Barbers";
 import Trash from "./pages/Trash";
+import Plans from "./pages/Plans";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
