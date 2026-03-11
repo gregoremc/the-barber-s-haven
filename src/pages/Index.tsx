@@ -42,8 +42,6 @@ const Dashboard = () => {
   const services = useSyncExternalStore(servicesStore.subscribe, servicesStore.getServices);
   const products = useSyncExternalStore(productsStore.subscribe, productsStore.getProducts);
   useSyncExternalStore(revenueStore.subscribe, revenueStore.getEntries);
-  const allClients = useSyncExternalStore(clientsStore.subscribe, clientsStore.getClients);
-  const clientPlans = useSyncExternalStore(clientPlansStore.subscribe, clientPlansStore.getClientPlans);
   const allPlans = useSyncExternalStore(plansStore.subscribe, plansStore.getPlans);
   const [rescheduleApt, setRescheduleApt] = useState<any>(null);
 
