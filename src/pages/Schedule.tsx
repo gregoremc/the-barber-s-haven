@@ -226,6 +226,42 @@ const Schedule = () => {
     return Math.max(1, Math.ceil(totalDuration / 30));
   };
 
+  // Delete appointment and reverse financials if completed
+  const handleDeleteAppointment = (apt: Appointment) => {
+    const svcIds = getServiceIds(apt);
+    const svcNames = svcIds.map((sid) => allServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+
+    // Reverse financial entries if it was completed
+    if (apt.status === "completed") {
+      revenueStore.removeEntriesByDescription(svcNames, apt.date);
+      paymentsStore.removeCommissionsByDescription(`Comissão: ${svcNames}`, apt.barberId, apt.date);
+    }
+
+    // Send to trash
+    trashStore.addItem({
+      type: "appointment",
+      typeLabel: "Agendamento",
+      name: `${apt.clientName} — ${apt.date} ${apt.time}`,
+      data: apt,
+    });
+
+    appointmentsStore.deleteAppointment(apt.id);
+    setSelectedApt(null);
+    toast.success("Agendamento excluído e enviado para a lixeira");
+  };
+
+  // Register restore handler for trash
+  registerRestoreHandler("appointment", (item) => {
+    const apt = item.data as Appointment;
+    appointmentsStore.restoreAppointment(apt);
+    // Re-generate financials if it was completed
+    if (apt.status === "completed") {
+      const svcIds = getServiceIds(apt);
+      generateCommissionPayment(apt.barberId, svcIds, apt.date);
+    }
+    toast.success("Agendamento restaurado!");
+  });
+
   // Click on empty cell to open form with pre-filled barber and time
   const handleCellClick = (barberId: string, time: string) => {
     setForm({ barberId, clientName: "", time });
