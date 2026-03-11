@@ -47,6 +47,14 @@ export const revenueStore = {
       notify();
     }
   },
+  removeEntriesByDescription: async (description: string, date: string) => {
+    const toRemove = entries.filter((e) => e.description === description && e.date === date);
+    entries = entries.filter((e) => !(e.description === description && e.date === date));
+    notify();
+    for (const entry of toRemove) {
+      await supabase.from("revenue_entries").delete().eq("id", entry.id);
+    }
+  },
   getMonthRevenue: (year: number, month: number) => {
     const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
     return entries.filter((e) => e.date.startsWith(prefix)).reduce((acc, e) => acc + e.amount, 0);

@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ChevronLeft, ChevronRight, X, User, Check, Ban } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, User, Check, Ban, Trash2 } from "lucide-react";
 import MotionContainer from "@/components/MotionContainer";
 import ClientSearch from "@/components/ClientSearch";
 import { servicesStore } from "@/data/servicesStore";
@@ -9,6 +9,8 @@ import { appointmentsStore } from "@/data/appointmentsStore";
 import { Appointment } from "@/types/barbershop";
 import { paymentsStore } from "@/data/paymentsStore";
 import { revenueStore } from "@/data/revenueStore";
+import { trashStore } from "@/data/trashStore";
+import { registerRestoreHandler } from "@/pages/Trash";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -224,6 +226,42 @@ const Schedule = () => {
     return Math.max(1, Math.ceil(totalDuration / 30));
   };
 
+  // Delete appointment and reverse financials if completed
+  const handleDeleteAppointment = (apt: Appointment) => {
+    const svcIds = getServiceIds(apt);
+    const svcNames = svcIds.map((sid) => allServices.find((s) => s.id === sid)?.name).filter(Boolean).join(", ");
+
+    // Reverse financial entries if it was completed
+    if (apt.status === "completed") {
+      revenueStore.removeEntriesByDescription(svcNames, apt.date);
+      paymentsStore.removeCommissionsByDescription(`Comissão: ${svcNames}`, apt.barberId, apt.date);
+    }
+
+    // Send to trash
+    trashStore.addItem({
+      type: "appointment",
+      typeLabel: "Agendamento",
+      name: `${apt.clientName} — ${apt.date} ${apt.time}`,
+      data: apt,
+    });
+
+    appointmentsStore.deleteAppointment(apt.id);
+    setSelectedApt(null);
+    toast.success("Agendamento excluído e enviado para a lixeira");
+  };
+
+  // Register restore handler for trash
+  registerRestoreHandler("appointment", (item) => {
+    const apt = item.data as Appointment;
+    appointmentsStore.restoreAppointment(apt);
+    // Re-generate financials if it was completed
+    if (apt.status === "completed") {
+      const svcIds = getServiceIds(apt);
+      generateCommissionPayment(apt.barberId, svcIds, apt.date);
+    }
+    toast.success("Agendamento restaurado!");
+  });
+
   // Click on empty cell to open form with pre-filled barber and time
   const handleCellClick = (barberId: string, time: string) => {
     setForm({ barberId, clientName: "", time });
@@ -380,10 +418,17 @@ const Schedule = () => {
                                 className="p-0 border-r border-border/50 last:border-r-0 align-top"
                               >
                                 <div
-                                  className={`m-0.5 p-2 rounded-lg border h-full cursor-pointer transition-all hover:opacity-80 ${statusColors[apt.status]}`}
+                                  className={`m-0.5 p-2 rounded-lg border h-full cursor-pointer transition-all hover:opacity-80 relative group ${statusColors[apt.status]}`}
                                   onClick={() => setSelectedApt(apt)}
                                 >
-                                  <p className="text-xs font-medium truncate">{apt.time} - {apt.clientName}</p>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteAppointment(apt); }}
+                                    className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                                    title="Excluir"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                  <p className="text-xs font-medium truncate pr-5">{apt.time} - {apt.clientName}</p>
                                   <p className="text-[10px] text-muted-foreground truncate mt-0.5">
                                     {aptServices.map((s) => s!.name).join(", ")}
                                   </p>
@@ -482,6 +527,13 @@ const Schedule = () => {
                     </button>
                   </div>
                 )}
+                <button
+                  onClick={() => handleDeleteAppointment(selectedApt)}
+                  className="w-full mt-1 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Trash2 size={14} />
+                  Excluir Agendamento
+                </button>
               </>
             );
           })()}
