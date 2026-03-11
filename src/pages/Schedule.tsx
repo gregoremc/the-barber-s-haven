@@ -336,7 +336,7 @@ const Schedule = () => {
                                   onClick={() => {
                                     if (apt.status === "scheduled") {
                                       // Show action options
-                                      const action = window.confirm(`${apt.clientName}\n${services.map(s => s!.name).join(", ")}\nR$ ${totalPrice.toFixed(2)}\n\nConcluir atendimento?`);
+                                      const action = window.confirm(`${apt.clientName}\n${aptServices.map(s => s!.name).join(", ")}\nR$ ${totalPrice.toFixed(2)}\n\nConcluir atendimento?`);
                                       if (action) {
                                         updateStatus(apt.id, "completed");
                                         toast.success("Atendimento concluído!");
