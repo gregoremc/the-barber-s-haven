@@ -114,7 +114,8 @@ const Schedule = () => {
 
   const activeBarbers = barbersList.filter((b) => b.active !== false);
   const dateStr = toDateStr(selectedDate);
-  const dayAppointments = appointments.filter((a) => a.date === dateStr);
+  const allDayAppointments = appointments.filter((a) => a.date === dateStr);
+  const dayAppointments = allDayAppointments.filter((a) => a.status !== "cancelled");
 
   // Auto-generate recurring appointments from active client plans
   useEffect(() => {
@@ -154,7 +155,7 @@ const Schedule = () => {
       const client = allClients.find((c) => c.id === cp.clientId);
       if (!client) continue;
       const exists = appointments.some(
-        (a) => a.date === dateStr && a.clientName === client.name && a.planId === plan?.id && a.status !== "cancelled"
+        (a) => a.date === dateStr && a.clientName === client.name && a.planId === plan?.id
       );
       if (exists) {
         generatedRef.current.add(key);
@@ -391,7 +392,12 @@ const Schedule = () => {
       data: apt,
     });
 
-    appointmentsStore.deleteAppointment(apt.id);
+    // For plan appointments, cancel instead of delete to prevent auto-regeneration
+    if (apt.planId) {
+      appointmentsStore.updateStatus(apt.id, "cancelled");
+    } else {
+      appointmentsStore.deleteAppointment(apt.id);
+    }
     setSelectedApt(null);
     toast.success("Agendamento excluído e enviado para a lixeira");
   };
