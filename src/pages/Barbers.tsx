@@ -133,7 +133,7 @@ const Barbers = () => {
 
     // Simulated product sales for demo
     if (monthOffset === 0) {
-      mockProducts.forEach((p) => {
+      allProducts.forEach((p) => {
         totals[p.name] = { qty: 1, total: p.sellPrice, type: "produto" };
       });
     }
