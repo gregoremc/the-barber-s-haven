@@ -665,28 +665,40 @@ const Schedule = () => {
                   </div>
                 </div>
                 {selectedApt.status === "scheduled" && (
-                  <div className="flex gap-3 pt-2">
+                  <div className="space-y-2 pt-2">
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          updateStatus(selectedApt.id, "completed");
+                          setSelectedApt(null);
+                          toast.success("Atendimento concluído!");
+                        }}
+                        className="organic-btn-primary flex items-center gap-2 flex-1"
+                      >
+                        <Check size={16} />
+                        Concluir
+                      </button>
+                      <button
+                        onClick={() => {
+                          updateStatus(selectedApt.id, "cancelled");
+                          setSelectedApt(null);
+                          toast.info("Agendamento cancelado");
+                        }}
+                        className="organic-btn-secondary flex items-center gap-2 flex-1 !text-destructive hover:!bg-destructive/10"
+                      >
+                        <Ban size={16} />
+                        Cancelar
+                      </button>
+                    </div>
                     <button
                       onClick={() => {
-                        updateStatus(selectedApt.id, "completed");
+                        setRescheduleApt(selectedApt);
                         setSelectedApt(null);
-                        toast.success("Atendimento concluído!");
                       }}
-                      className="organic-btn-primary flex items-center gap-2 flex-1"
+                      className="w-full py-2 text-sm text-accent hover:bg-accent/10 rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
-                      <Check size={16} />
-                      Concluir
-                    </button>
-                    <button
-                      onClick={() => {
-                        updateStatus(selectedApt.id, "cancelled");
-                        setSelectedApt(null);
-                        toast.info("Agendamento cancelado");
-                      }}
-                      className="organic-btn-secondary flex items-center gap-2 flex-1 !text-destructive hover:!bg-destructive/10"
-                    >
-                      <Ban size={16} />
-                      Cancelar
+                      <CalendarClock size={14} />
+                      Reagendar
                     </button>
                   </div>
                 )}
