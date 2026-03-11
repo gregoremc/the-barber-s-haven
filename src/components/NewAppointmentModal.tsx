@@ -146,7 +146,7 @@ const NewAppointmentModal = ({ open, onClose }: Props) => {
                   className="organic-input"
                 >
                   <option value="">Adicionar Serviço</option>
-                  {mockServices
+                  {allServices
                     .filter((s) => !selectedServices.includes(s.id))
                     .map((s) => (
                       <option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>
